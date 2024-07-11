@@ -66,7 +66,7 @@ namespace SpawnInfra
 
                 foreach (var item in Config.HellTunnel)
                 {
-                    RockTrialField(Main.rockLayer, item.Height, item.Width3, item.Center + 5, item.Center +10, item.Center +8);
+                    RockTrialField(Main.rockLayer, item.Height, item.Width3);
                     ShimmerBiome(item.Width2);
                     HellTunnel(Main.spawnTileX + item.SpawnTileX, Main.spawnTileY + item.SpawnTileY, item.Width);
                     UnderworldPlatform(Main.UnderworldLayer + item.PlatformY, item.PlatformY);
@@ -97,7 +97,7 @@ namespace SpawnInfra
         #endregion
 
         #region 刷怪场
-        private static void RockTrialField(double posY, int Height, int Width, int CenterLimit,int ChestHeight, int StandLayer)
+        private static void RockTrialField(double posY, int Height, int Width)
         {
             if (!Config.HellTunnel[0].Enabled5) return;
 
@@ -111,8 +111,8 @@ namespace SpawnInfra
             int left = Math.Max(Main.maxTilesX / 2 - Width, 0);
             int right = Math.Min(Main.maxTilesX / 2 + Width, Main.maxTilesX);
 
-            int CenterLeft = Main.maxTilesX / 2 - CenterLimit * 2;
-            int CenterRight = Main.maxTilesX / 2 + CenterLimit;
+            int CenterLeft = Main.maxTilesX / 2 - 10 - Config.HellTunnel[0].Center;
+            int CenterRight = Main.maxTilesX / 2 + 10 + Config.HellTunnel[0].Center;
 
             for (int y = (int)posY; y > clear; y--)
             {
@@ -123,13 +123,13 @@ namespace SpawnInfra
                     WorldGen.PlaceTile(x, bottom, Config.HellTunnel[0].ID, false, true, -1, 0); //刷怪场底部放1层
                     WorldGen.PlaceTile(x, middle, Config.HellTunnel[0].ID, false, true, -1, 0); //刷怪场中间放1层（刷怪用）
 
-                    WorldGen.PlaceTile(x, middle + StandLayer, Config.HellTunnel[0].ID, false, true, -1, 0);//中间下8格放一层方便站人
-                    for (int wallY = middle + StandLayer - 7; wallY <= middle + StandLayer -1; wallY++)
+                    WorldGen.PlaceTile(x, middle + 8 + Config.HellTunnel[0].Center, Config.HellTunnel[0].ID, false, true, -1, 0);//中间下8格放一层方便站人
+                    for (int wallY = middle + 1 + Config.HellTunnel[0].Center; wallY <= middle + 7 + Config.HellTunnel[0].Center; wallY++)
                     {
                         Main.tile[x, wallY].wall = 155; // 放置墙壁
                     }
-                    WorldGen.PlaceTile(x, middle + ChestHeight + 1, Config.HellTunnel[0].ID, false, true, -1, 0); //中间下11格放箱子的实体块
-                    WorldGen.PlaceTile(x, middle + ChestHeight, Config.Chests[0].ChestID, false, true, -1, Config.Chests[0].ChestStyle); //中间下10格放箱子
+                    WorldGen.PlaceTile(x, middle + 11 + Config.HellTunnel[0].Center, Config.HellTunnel[0].ID, false, true, -1, 0); //中间下11格放箱子的实体块
+                    WorldGen.PlaceTile(x, middle + 10 + Config.HellTunnel[0].Center, Config.Chests[0].ChestID, false, true, -1, Config.Chests[0].ChestStyle); //中间下10格放箱子
 
                     WorldGen.PlaceTile(x, middle + 2, Config.HellTunnel[0].ID, false, true, -1, 0); //放计时器的平台
 
@@ -139,21 +139,21 @@ namespace SpawnInfra
                     WorldGen.PlaceTile(x, middle + 4, Config.HellTunnel[0].ID, false, true, -1, 0); //防掉怪下来
 
 
-                    // 如果x值在中心范围内，放置10格高的方块
+                    // 如果x值在中心范围内，放置8格高的方块
                     if (x >= CenterLeft && x <= CenterRight)
                     {
-                        for (int wallY = middle - CenterLimit * 2; wallY <= middle - 1; wallY++)
+                        for (int wallY = middle - 8 - Config.HellTunnel[0].Center; wallY <= middle - 1; wallY++)
                         {
                             // 创建矩形判断
-                            if (wallY >= middle - CenterLimit && wallY <= middle - 1 && x >= CenterLeft + 1 && x <= CenterRight - 1)
+                            if (wallY >= middle - 8 - Config.HellTunnel[0].Center && wallY <= middle - 1 && x >= CenterLeft + 1 && x <= CenterRight - 1)
                                 // 挖空方块
                                 Main.tile[x, wallY].ClearEverything();
                             else
                                 // 在矩形范围外放置方块
-                                WorldGen.PlaceTile(x, wallY, Config.HellTunnel[0].ID, false, true, -1, 0);
+                                WorldGen.PlaceTile(x, wallY + 1, Config.HellTunnel[0].ID, false, true, -1, 0);
 
                             // 检查是否在中间位置，如果是则放置岩浆
-                            if (wallY == middle - CenterLimit)
+                            if (wallY == middle - 8 - Config.HellTunnel[0].Center)
                             {
                                 Main.tile[x, wallY].liquid = 60;  //设置1格液体
                                 Main.tile[x, wallY].liquidType(1); // 设置为岩浆
@@ -182,12 +182,24 @@ namespace SpawnInfra
                         WorldGen.PlaceWire(x, middle - 1);
                         WorldGen.PlaceActuator(x, middle - 1);
                         // 在电线的末端放置1/4秒计时器并连接
-                        WorldGen.PlaceWire(CenterLeft -1, middle + 1);
+                        WorldGen.PlaceWire(CenterLeft - 1, middle + 1);
                         WorldGen.PlaceWire(CenterRight + 1, middle + 1);
                         WorldGen.PlaceWire(CenterLeft - 1, middle);
                         WorldGen.PlaceWire(CenterRight + 1, middle);
-                        WorldGen.PlaceTile(CenterLeft -1, middle + 1, 144, false, true, -1, 4);
+                        WorldGen.PlaceTile(CenterLeft - 1, middle + 1, 144, false, true, -1, 4);
                         WorldGen.PlaceTile(CenterRight + 1, middle + 1, 144, false, true, -1, 4);
+                        //在1/4秒计时器下面连接开关
+                        WorldGen.PlaceWire(CenterLeft - 1, middle +2);
+                        WorldGen.PlaceWire(CenterLeft - 1, middle +3);
+                        WorldGen.PlaceWire(CenterLeft - 1, middle + 4);
+                        WorldGen.PlaceWire(CenterLeft - 1, middle + 5);
+                        WorldGen.PlaceWire(CenterRight + 1, middle + 2);
+                        WorldGen.PlaceWire(CenterRight + 1, middle + 3);
+                        WorldGen.PlaceWire(CenterRight + 1, middle + 4);
+                        WorldGen.PlaceWire(CenterRight + 1, middle + 5);
+                        WorldGen.PlaceTile(CenterLeft - 1, middle + 5, 136, false, true, -1, 0);
+                        WorldGen.PlaceTile(CenterRight + 1, middle + 5, 136, false, true, -1, 0);
+
                     }
                 }
             }
