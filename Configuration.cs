@@ -192,6 +192,8 @@ namespace SpawnInfra
             public bool Enabled4 { get; set; } = true;
             [JsonProperty("是否建刷怪场", Order = -2)]
             public bool Enabled5 { get; set; } = true;
+            [JsonProperty("刷怪场只清不建", Order = -1)]
+            public bool Enabled6 { get; set; } = false;
 
             [JsonProperty("方块图格", Order = 1)]
             public ushort ID { get; set; }
@@ -218,7 +220,7 @@ namespace SpawnInfra
             public int Height { get; set; }
             [JsonProperty("刷怪场清理宽度", Order = 10)]
             public int Width3 { get; set; }
-            [JsonProperty("刷怪中心缩放值", Order = 10)]
+            [JsonProperty("刷怪中心偏移", Order = 10)]
             public int Center { get; set; }
 
 
@@ -260,7 +262,7 @@ namespace SpawnInfra
 
             HellTunnel = new List<ItemData3>
             {
-                new ItemData3(38, 214, 19, 43, 0, 0,5,40,2,150,200,0),
+                new ItemData3(38, 214, 19, 43, 0, 0,5,40,2,150,150,0),
             };
         }
         #endregion

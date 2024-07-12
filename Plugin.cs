@@ -1,9 +1,7 @@
-﻿using ReLogic.OS;
-using Terraria;
+﻿using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
-using static Google.Protobuf.WireFormat;
 
 
 namespace SpawnInfra
@@ -99,10 +97,7 @@ namespace SpawnInfra
         #region 刷怪场
         private static void RockTrialField(double posY, int Height, int Width)
         {
-            if (!Config.HellTunnel[0].Enabled5) return;
-
             int clear = (int)posY - Height;
-
             // 计算顶部、底部和中间位置
             int top = clear + Height * 2;
             int bottom = (int)posY + Height * 2;
@@ -111,95 +106,131 @@ namespace SpawnInfra
             int left = Math.Max(Main.maxTilesX / 2 - Width, 0);
             int right = Math.Min(Main.maxTilesX / 2 + Width, Main.maxTilesX);
 
-            int CenterLeft = Main.maxTilesX / 2 - 10 - Config.HellTunnel[0].Center;
-            int CenterRight = Main.maxTilesX / 2 + 10 + Config.HellTunnel[0].Center;
+            int CenterLeft = Main.maxTilesX / 2 - 15 - Config.HellTunnel[0].Center;
+            int CenterRight = Main.maxTilesX / 2 + 15 + Config.HellTunnel[0].Center;
 
-            for (int y = (int)posY; y > clear; y--)
+            if (Config.HellTunnel[0].Enabled5)
             {
-                for (int x = left; x < right; x++)
+                for (int y = (int)posY; y > clear; y--)
                 {
-                    Main.tile[x, y + Height * 2].ClearEverything(); // 清除方块
-                    WorldGen.PlaceTile(x, top, Config.HellTunnel[0].ID, false, true, -1, 0); // 在清理顶部放1层（防液体流进刷怪场）
-                    WorldGen.PlaceTile(x, bottom, Config.HellTunnel[0].ID, false, true, -1, 0); //刷怪场底部放1层
-                    WorldGen.PlaceTile(x, middle, Config.HellTunnel[0].ID, false, true, -1, 0); //刷怪场中间放1层（刷怪用）
-
-                    WorldGen.PlaceTile(x, middle + 8 + Config.HellTunnel[0].Center, Config.HellTunnel[0].ID, false, true, -1, 0);//中间下8格放一层方便站人
-                    for (int wallY = middle + 1 + Config.HellTunnel[0].Center; wallY <= middle + 7 + Config.HellTunnel[0].Center; wallY++)
+                    for (int x = left; x < right; x++)
                     {
-                        Main.tile[x, wallY].wall = 155; // 放置墙壁
-                    }
-                    WorldGen.PlaceTile(x, middle + 11 + Config.HellTunnel[0].Center, Config.HellTunnel[0].ID, false, true, -1, 0); //中间下11格放箱子的实体块
-                    WorldGen.PlaceTile(x, middle + 10 + Config.HellTunnel[0].Center, Config.Chests[0].ChestID, false, true, -1, Config.Chests[0].ChestStyle); //中间下10格放箱子
+                        Main.tile[x, y + Height * 2].ClearEverything(); // 清除方块
+                        WorldGen.PlaceTile(x, top, Config.HellTunnel[0].ID, false, true, -1, 0); // 在清理顶部放1层（防液体流进刷怪场）
+                        WorldGen.PlaceTile(x, bottom, Config.HellTunnel[0].ID, false, true, -1, 0); //刷怪场底部放1层
 
-                    WorldGen.PlaceTile(x, middle + 2, Config.HellTunnel[0].ID, false, true, -1, 0); //放计时器的平台
+                        WorldGen.PlaceTile(x, middle, Config.HellTunnel[0].ID, false, true, -1, 0); //刷怪场中间放1层（刷怪用）
 
-                    Main.tile[x, middle + 3].liquid = 60;  //设置1格液体
-                    Main.tile[x, middle + 3].liquidType(1); // 设置为岩浆
-                    WorldGen.SquareTileFrame(x, middle + 3, false);
-                    WorldGen.PlaceTile(x, middle + 4, Config.HellTunnel[0].ID, false, true, -1, 0); //防掉怪下来
-
-
-                    // 如果x值在中心范围内，放置8格高的方块
-                    if (x >= CenterLeft && x <= CenterRight)
-                    {
-                        for (int wallY = middle - 8 - Config.HellTunnel[0].Center; wallY <= middle - 1; wallY++)
+                        WorldGen.PlaceTile(x, middle + 8 + Config.HellTunnel[0].Center, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);//中间下8格放一层方便站人
+                        for (int wallY = middle + 1 + Config.HellTunnel[0].Center; wallY <= middle + 7 + Config.HellTunnel[0].Center; wallY++)
                         {
-                            // 创建矩形判断
-                            if (wallY >= middle - 8 - Config.HellTunnel[0].Center && wallY <= middle - 1 && x >= CenterLeft + 1 && x <= CenterRight - 1)
-                                // 挖空方块
-                                Main.tile[x, wallY].ClearEverything();
-                            else
-                                // 在矩形范围外放置方块
-                                WorldGen.PlaceTile(x, wallY + 1, Config.HellTunnel[0].ID, false, true, -1, 0);
+                            Main.tile[x, wallY].wall = 155; // 放置墙壁
+                        }
+                        WorldGen.PlaceTile(x, middle + 11 + Config.HellTunnel[0].Center, Config.HellTunnel[0].ID, false, true, -1, 0); //中间下11格放箱子的实体块
+                        WorldGen.PlaceTile(x, middle + 10 + Config.HellTunnel[0].Center, Config.Chests[0].ChestID, false, true, -1, Config.Chests[0].ChestStyle); //中间下10格放箱子
 
-                            // 检查是否在中间位置，如果是则放置岩浆
-                            if (wallY == middle - 8 - Config.HellTunnel[0].Center)
+                        WorldGen.PlaceTile(x, middle + 2, Config.HellTunnel[0].ID, false, true, -1, 0); //放计时器的平台
+
+                        Main.tile[x, middle + 3].liquid = 60;  //设置1格液体
+                        Main.tile[x, middle + 3].liquidType(1); // 设置为岩浆
+                        WorldGen.SquareTileFrame(x, middle + 3, false);
+                        WorldGen.PlaceTile(x, middle + 4, Config.HellTunnel[0].ID, false, true, -1, 0); //防掉怪下来
+
+
+                        // 如果x值在中心范围内，放置10格高的方块
+                        if (x >= CenterLeft && x <= CenterRight)
+                        {
+                            //定刷怪区
+                            for (int i = 0; i <= 3; i++)
                             {
-                                Main.tile[x, wallY].liquid = 60;  //设置1格液体
-                                Main.tile[x, wallY].liquidType(1); // 设置为岩浆
-                                WorldGen.SquareTileFrame(x, wallY, false);
+                                WorldGen.PlaceTile(CenterLeft - 61, middle + i, Config.HellTunnel[0].ID, false, true, -1, 0);
+                                WorldGen.PlaceTile(CenterRight + 61, middle + i, Config.HellTunnel[0].ID, false, true, -1, 0);
+                                WorldGen.PlaceTile(CenterLeft - 85, middle + i, Config.HellTunnel[0].ID, false, true, -1, 0);
+                                WorldGen.PlaceTile(CenterRight + 85, middle + i, Config.HellTunnel[0].ID, false, true, -1, 0);
+                            }
+
+                            for (int wallY = middle - 21 - Config.HellTunnel[0].Center; wallY <= middle - 1; wallY++)
+                            {
+                                // 创建矩形判断
+                                if (wallY >= middle - 21 - Config.HellTunnel[0].Center && wallY <= middle - 1 && x >= CenterLeft + 1 && x <= CenterRight - 1)
+                                    // 挖空方块
+                                    Main.tile[x, wallY].ClearEverything();
+                                else
+                                    // 在矩形范围外放置方块
+                                    WorldGen.PlaceTile(x, wallY + 1, Config.HellTunnel[0].ID, false, true, -1, 0);
+
+                                // 检查是否在中间位置，如果是则放置岩浆
+                                if (wallY == middle - 21 - Config.HellTunnel[0].Center)
+                                {
+                                    Main.tile[x, wallY].liquid = 60;  //设置1格液体
+                                    Main.tile[x, wallY].liquidType(1); // 设置为岩浆
+                                    WorldGen.SquareTileFrame(x, wallY, false);
+                                }
                             }
                         }
+                        else //不在中心 左右生成半砖推怪平台
+                        {
+                            Main.tile[x, middle - 1].type = Config.HellTunnel[0].ID;
+                            Main.tile[x, middle - 1].active(true);
+                            Main.tile[x, middle - 1].halfBrick(false);
+
+                            // 根据x值确定斜坡方向
+                            if (x < Main.maxTilesX / 2)
+                            {
+                                Main.tile[x, middle - 1].slope(3); // 设置为右斜坡
+                            }
+                            else
+                            {
+                                Main.tile[x, middle - 1].slope(4); // 设置为左斜坡
+                            }
+                            // 把半砖替换成推怪平台
+                            WorldGen.PlaceTile(x, middle - 1, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);
+                            //平台加电线+制动器
+                            WorldGen.PlaceWire(x, middle - 1);
+                            WorldGen.PlaceActuator(x, middle - 1);
+
+                            // 在电线的末端放置1/4秒计时器并连接
+                            WorldGen.PlaceWire(CenterLeft - 1, middle + 1);
+                            WorldGen.PlaceWire(CenterRight + 1, middle + 1);
+                            WorldGen.PlaceWire(CenterLeft - 1, middle);
+                            WorldGen.PlaceWire(CenterRight + 1, middle);
+                            WorldGen.PlaceTile(CenterLeft - 1, middle + 1, 144, false, true, -1, 4);
+                            WorldGen.PlaceTile(CenterRight + 1, middle + 1, 144, false, true, -1, 4);
+
+                            //在1/4秒计时器下面连接开关
+                            for (int i = 2; i <= 5; i++)
+                            {
+                                WorldGen.PlaceWire(CenterLeft - 1, middle + i);
+                                WorldGen.PlaceWire(CenterRight + 1, middle + i);
+                                WorldGen.PlaceTile(CenterLeft - 1, middle + 5, 136, false, true, -1, 0);
+                                WorldGen.PlaceTile(CenterRight + 1, middle + 5, 136, false, true, -1, 0);
+                            }
+
+                            //计时器上面加1个尖球机关
+                            for (int j = 2; j <= 20 + Config.HellTunnel[0].Center; j++)
+                            {
+                                WorldGen.PlaceWire(CenterLeft - 1, middle - j);
+                                WorldGen.PlaceWire(CenterRight + 1, middle - j);
+                                WorldGen.PlaceTile(CenterLeft - 1, middle - 20 - Config.HellTunnel[0].Center, 137, true, false, -1, 3);
+                                WorldGen.PlaceTile(CenterRight + 1, middle - 20 - Config.HellTunnel[0].Center, 137, true, false, -1, 3);
+                            }
+
+                        }
                     }
-                    else //不在中心 左右生成半砖推怪平台
+                }
+            }
+            //只清不建
+            else if (Config.HellTunnel[0].Enabled6)
+            {
+
+                for (int y = (int)posY; y > clear; y--)
+                {
+                    for (int x = left; x < right; x++)
                     {
-                        Main.tile[x, middle - 1].type = Config.HellTunnel[0].ID;
-                        Main.tile[x, middle - 1].active(true);
-                        Main.tile[x, middle - 1].halfBrick(false);
-
-                        // 根据x值确定斜坡方向
-                        if (x < Main.maxTilesX / 2)
-                        {
-                            Main.tile[x, middle - 1].slope(3); // 设置为右斜坡
-                        }
-                        else
-                        {
-                            Main.tile[x, middle - 1].slope(4); // 设置为左斜坡
-                        }
-                        // 把半砖替换成推怪平台
-                        WorldGen.PlaceTile(x, middle - 1, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);
-                        //平台加电线+制动器
-                        WorldGen.PlaceWire(x, middle - 1);
-                        WorldGen.PlaceActuator(x, middle - 1);
-                        // 在电线的末端放置1/4秒计时器并连接
-                        WorldGen.PlaceWire(CenterLeft - 1, middle + 1);
-                        WorldGen.PlaceWire(CenterRight + 1, middle + 1);
-                        WorldGen.PlaceWire(CenterLeft - 1, middle);
-                        WorldGen.PlaceWire(CenterRight + 1, middle);
-                        WorldGen.PlaceTile(CenterLeft - 1, middle + 1, 144, false, true, -1, 4);
-                        WorldGen.PlaceTile(CenterRight + 1, middle + 1, 144, false, true, -1, 4);
-                        //在1/4秒计时器下面连接开关
-                        WorldGen.PlaceWire(CenterLeft - 1, middle +2);
-                        WorldGen.PlaceWire(CenterLeft - 1, middle +3);
-                        WorldGen.PlaceWire(CenterLeft - 1, middle + 4);
-                        WorldGen.PlaceWire(CenterLeft - 1, middle + 5);
-                        WorldGen.PlaceWire(CenterRight + 1, middle + 2);
-                        WorldGen.PlaceWire(CenterRight + 1, middle + 3);
-                        WorldGen.PlaceWire(CenterRight + 1, middle + 4);
-                        WorldGen.PlaceWire(CenterRight + 1, middle + 5);
-                        WorldGen.PlaceTile(CenterLeft - 1, middle + 5, 136, false, true, -1, 0);
-                        WorldGen.PlaceTile(CenterRight + 1, middle + 5, 136, false, true, -1, 0);
-
+                        Main.tile[x, y + Height * 2].ClearEverything(); // 清除方块
+                        WorldGen.PlaceTile(x, top, Config.HellTunnel[0].ID, false, true, -1, 0); // 在清理顶部放1层（防液体流进刷怪场）
+                        WorldGen.PlaceTile(x, bottom, Config.HellTunnel[0].ID, false, true, -1, 0); //刷怪场底部放1层
+                        WorldGen.PlaceTile(CenterLeft, middle, 267, false, true, -1, 0); //定中心
                     }
                 }
             }
