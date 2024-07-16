@@ -14,7 +14,4 @@
     <ItemGroup>
       <PackageReference Include="TShock" Version="5.*" />
     </ItemGroup>
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="del C:\Users\羽学\Desktop\Beta\NewPlugins\*.dll&#xD;&#xA;copy bin\Release\net6.0\SpawnInfra.dll C:\Users\羽学\Desktop\Beta\NewPlugins&#xD;&#xA;taskkill /F /IM TShock.Server.exe" />
-    </Target>
 </Project>
