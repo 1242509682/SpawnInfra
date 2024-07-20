@@ -26,7 +26,7 @@ namespace SpawnInfra
         public bool Enabled { get; set; } = true;
 
         [JsonProperty("开服指令表")]
-        public string[] CommandList { get; set; } = new string[2] { "/save", "/clear i 9999"};
+        public string[] CommandList { get; set; } = new string[1] { "/save"};
 
         [JsonProperty("自建微光湖", Order = 0)]
         public List<ItemData4> SpawnShimmerBiome { get; set; } = new List<ItemData4>();

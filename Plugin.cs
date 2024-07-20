@@ -66,6 +66,11 @@ namespace SpawnInfra
 
             if (Config.Enabled)
             {
+                foreach (var cmd in Config.CommandList)
+                {
+                    Commands.HandleCommand(TSPlayer.Server, cmd);
+                }
+
                 foreach (var item in Config.Chests)
                 {
                     SpawnChest(Main.spawnTileX + item.spawnTileX, Main.spawnTileY + item.spawnTileY, item.ClearHeight, item.ChestWidth, item.ChestCount, item.ChestLayers);
@@ -170,11 +175,8 @@ namespace SpawnInfra
                     "基础建设已完成，如需重置布局\n" +
                     "请输入指令后重启服务器：/rm reset", 250, 247, 105);
 
-                foreach (var cmd in Config.CommandList)
-                {
-                    Commands.HandleCommand(TSPlayer.Server, cmd);
-                }
-
+                Commands.HandleCommand(TSPlayer.Server, "/save");
+                Commands.HandleCommand(TSPlayer.Server, "/clear i 9999");
                 Configuration.Read();
                 Config.Enabled = false;
                 Config.Write();
