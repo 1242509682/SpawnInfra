@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json;
 using TShockAPI;
+using SpawnInfra;
+using Terraria;
 
 namespace SpawnInfra
 {
@@ -22,6 +24,9 @@ namespace SpawnInfra
 
         [JsonProperty("开服自动基建", Order = -10)]
         public bool Enabled { get; set; } = true;
+
+        [JsonProperty("开服指令表")]
+        public string[] CommandList { get; set; } = new string[2] { "/save", "/clear i 9999"};
 
         [JsonProperty("自建微光湖", Order = 0)]
         public List<ItemData4> SpawnShimmerBiome { get; set; } = new List<ItemData4>();

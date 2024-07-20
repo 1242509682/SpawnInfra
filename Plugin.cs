@@ -12,7 +12,7 @@ namespace SpawnInfra
         #region 插件信息
         public override string Name => "生成基础建设";
         public override string Author => "羽学";
-        public override Version Version => new Version(1, 5, 4);
+        public override Version Version => new Version(1, 5, 5);
         public override string Description => "给新世界创建NPC住房、仓库、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
         #endregion
 
@@ -96,6 +96,7 @@ namespace SpawnInfra
                             WorldGen.ShimmerMakeBiome(Main.spawnTileX + item.TileX, Main.spawnTileY + item.TileY); //坐标为出生点
                 }
 
+
                 //地狱直通车与刷怪场
                 foreach (var item in Config.HellTunnel)
                 {
@@ -169,8 +170,10 @@ namespace SpawnInfra
                     "基础建设已完成，如需重置布局\n" +
                     "请输入指令后重启服务器：/rm reset", 250, 247, 105);
 
-                Commands.HandleCommand(TSPlayer.Server, "/save");
-                Commands.HandleCommand(TSPlayer.Server, "/clear i 9999");
+                foreach (var cmd in Config.CommandList)
+                {
+                    Commands.HandleCommand(TSPlayer.Server, cmd);
+                }
 
                 Configuration.Read();
                 Config.Enabled = false;
@@ -242,7 +245,6 @@ namespace SpawnInfra
         private static void RockTrialField(double posY, int Height, int Width, int CenterVal)
         {
             int clear = (int)posY - Height;
-
             // 计算顶部、底部和中间位置
             int top = clear + Height * 2;
             int bottom = (int)posY + Height * 2;
@@ -253,7 +255,7 @@ namespace SpawnInfra
 
             int CenterLeft = Main.spawnTileX - 8 - CenterVal;
             int CenterRight = Main.spawnTileX + 8 + CenterVal;
-
+            
             if (Config.HellTunnel[0].BrushMonstEnabled && !Config.HellTunnel[0].ClearRegionEnabled)
             {
                 for (int y = (int)posY; y > clear; y--)
@@ -280,7 +282,6 @@ namespace SpawnInfra
                         {
                             Main.tile[x, wallY].wall = 155; // 放置墙壁
                         }
-
                         //定刷怪区
                         for (int i = 1; i <= 3; i++)
                         {
@@ -290,7 +291,7 @@ namespace SpawnInfra
                                 WorldGen.PlaceWall(CenterRight + j - 8 - CenterVal, middle + i, 164, false); // 右 62 - 84格刷怪区 放红玉晶莹墙警示
                             }
                         }
-
+                        if (Main.tile[x,y].wall == Terraria.ID.WallID.None)
                         WorldGen.PlaceTile(x, middle + 11 + CenterVal, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0); //中间下11格放箱子的实体块
 
                         WorldGen.PlaceTile(x, middle + 10 + CenterVal, Config.Chests[0].ChestTileID, false, true, -1, Config.Chests[0].ChestStyle); //中间下10格放箱子
@@ -604,7 +605,7 @@ namespace SpawnInfra
                 WorldGen.PlaceTile(num + 4, posY - 6, chair.id, false, true, 0, chair.style);
                 WorldGen.PlaceTile(num + 2, posY - 6, bench.id, false, true, -1, bench.style);
                 WorldGen.PlaceTile(num + 1, posY - 5, torch.id, false, true, -1, torch.style);
-            }
+                }
         }
 
         //指令方法 用来给玩家自己建晶塔房用
