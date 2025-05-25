@@ -12,11 +12,11 @@ internal class Configuration
     [JsonProperty("使用说明2", Order = -14)]
     public string Text2 { get; set; } = "[世界平台]普通世界从出生点往上算，天顶从太空层往下算，[刷怪场比例缩放]为倍数放大，建议不要调太高";
     [JsonProperty("使用说明3", Order = -13)]
-    public string Text3 { get; set; } = "改[箱子数量]要同时改[出生点偏移X]，改[箱子层数]要同时改[出生点偏移Y]，[层数间隔]和[箱子宽度]不建议动";
+    public string Text3 { get; set; } = "改[箱子数量]要同时改[出生点偏移X]，改[箱子层数]要同时改[出生点偏移Y]，[层数间隔]和[箱子宽度]不建议动,[启用墙壁与物品框]会使间隔额外加3格";
     [JsonProperty("使用说明4", Order = -12)]
-    public string Text4 { get; set; } = "给玩家用的建晶塔房指令:/rm 数量 权限名:room.use (千万别在出生点用，有炸图风险)";
+    public string Text4 { get; set; } = "给玩家用的建晶塔房指令:/rms 数量 权限名:room.use (千万别在出生点用，有炸图风险)";
     [JsonProperty("使用说明5", Order = -11)]
-    public string Text5 { get; set; } = "每次重置服务器前使用一遍：/rm 重置，或者直接把这个指令写进重置插件里";
+    public string Text5 { get; set; } = "每次重置服务器前使用一遍：/rms 重置，或者直接把这个指令写进重置插件里";
     [JsonProperty("使用说明6", Order = -11)]
     public string Text6 { get; set; } = "以下参数仅适用于大地图，中地图需自己调试适配";
     [JsonProperty("使用说明7", Order = -11)]
@@ -101,6 +101,9 @@ internal class Configuration
         [JsonProperty("是否建箱子", Order = -9)]
         public bool SpawnChestEnabled { get; set; } = true;
 
+        [JsonProperty("启用墙壁与物品框", Order = -8)]
+        public bool WallAndItemFrame { get; set; } = true;
+
         [JsonProperty("出生点偏移X", Order = -3)]
         public int spawnTileX { get; set; }
 
@@ -134,7 +137,13 @@ internal class Configuration
         [JsonProperty("平台样式", Order = 2)]
         public int ChestPlatformStyle { get; set; }
 
-        public ItemData1(int tileX, int tileY, int width, int count, int layers, int layerheight, int height, ushort chestID, int chestStyle, ushort platformID, int platformstyle)
+        [JsonProperty("墙壁ID", Order = 3)]
+        public ushort WallID { get; set; }
+
+        [JsonProperty("物品框ID", Order = 4)]
+        public ushort ItemFrameID { get; set; }
+
+        public ItemData1(int tileX, int tileY, int width, int count, int layers, int layerheight, int height, ushort chestID, int chestStyle, ushort platformID, int platformstyle, ushort wallID, ushort itemFrameID)
         {
             this.spawnTileX = tileX;
             this.spawnTileY = tileY;
@@ -147,6 +156,8 @@ internal class Configuration
             this.ChestStyle = chestStyle;
             this.ChestPlatformID = platformID;
             this.ChestPlatformStyle = platformstyle;
+            this.WallID = wallID;
+            this.ItemFrameID = itemFrameID;
         }
     }
     #endregion
@@ -182,7 +193,7 @@ internal class Configuration
         public int OceanPlatformInterval { get; set; }
 
         [JsonProperty("实体块包围左海平台(天顶必开)", Order = 11)]
-        public bool Enclose { get; set; } = true;
+        public bool Enclose { get; set; } = false;
         [JsonProperty("左海平台产生液体(非空岛不需要开)", Order = 12)]
         public bool PlaceLiquid { get; set; } = false;
 
@@ -312,7 +323,7 @@ internal class Configuration
 
         this.Chests = new List<ItemData1>
             {
-                new ItemData1(-38,27,2,18,8,2,2,21,1,19,43)
+                new ItemData1(-38,34,2,18,8,0,2,21,1,19,43,155,395)
             };
 
         this.WorldPlatform = new List<ItemData2>

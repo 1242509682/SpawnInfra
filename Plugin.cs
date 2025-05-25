@@ -1,8 +1,11 @@
-﻿using Terraria;
+﻿using System;
+using Terraria;
+using Terraria.Map;
 using Terraria.Utilities;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
+using TShockAPI.Net;
 
 namespace SpawnInfra
 {
@@ -12,8 +15,8 @@ namespace SpawnInfra
         #region 插件信息
         public override string Name => "生成基础建设";
         public override string Author => "羽学";
-        public override Version Version => new Version(1, 5, 6);
-        public override string Description => "给新世界创建NPC住房、仓库、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
+        public override Version Version => new Version(1, 5, 7);
+        public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
         #endregion
 
         #region 注册与释放
@@ -27,7 +30,7 @@ namespace SpawnInfra
             //提高优先级避免覆盖CreateSpawn插件
             ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize, 20);
             GetDataHandlers.PlayerUpdate.Register(this.PlayerUpdate);
-            Commands.ChatCommands.Add(new Command("room.use", Comds.Comd, "rm", "基建")
+            Commands.ChatCommands.Add(new Command("room.use", Comds.Comd, "rms", "基建")
             {
                 HelpText = "生成基础建设"
             });
@@ -69,10 +72,13 @@ namespace SpawnInfra
             //临近地下层
             var surface = Main.worldSurface * 0.7;
 
+            //当"开服自动基建"开启时
             if (Config.Enabled)
             {
+                //查找“开服指令表”的命令
                 foreach (var cmd in Config.CommandList)
                 {
+                    //用服务器执行这些命令
                     Commands.HandleCommand(TSPlayer.Server, cmd);
                 }
 
@@ -198,6 +204,7 @@ namespace SpawnInfra
                 Commands.HandleCommand(TSPlayer.Server, "/save");
                 Commands.HandleCommand(TSPlayer.Server, "/clear i 9999");
                 Configuration.Read();
+
                 Config.Enabled = false;
                 Config.Write();
             }
@@ -230,13 +237,13 @@ namespace SpawnInfra
         {
             if (InRegion(posY, height, width, centerVal))
             {
-                NPC.defaultSpawnRate = Config.HellTunnel[0].defaultSpawnRate;
-                NPC.defaultMaxSpawns = Config.HellTunnel[0].defaultMaxSpawns;
+                NPC.spawnRate = Config.HellTunnel[0].defaultSpawnRate;
+                NPC.maxSpawns = Config.HellTunnel[0].defaultMaxSpawns;
             }
             else
             {
-                NPC.defaultSpawnRate = TShock.Config.Settings.DefaultSpawnRate;
-                NPC.defaultMaxSpawns = TShock.Config.Settings.DefaultMaximumSpawns;
+                NPC.spawnRate = TShock.Config.Settings.DefaultSpawnRate;
+                NPC.maxSpawns = TShock.Config.Settings.DefaultMaximumSpawns;
             }
         }
         #endregion
@@ -666,12 +673,16 @@ namespace SpawnInfra
 
         #endregion
 
-        #region 箱子集群方法
+        #region 箱子集群+物品框方法
         private static void SpawnChest(int posX, int posY, int hight, int width, int count, int layers)
         {
             if (!Config.Chests[0].SpawnChestEnabled) return;
 
-            int ClearHeight = hight + (layers - 1) * (width + Config.Chests[0].LayerHeight);
+            // 如果启用了墙壁，则每层多预留3格空间
+            int spacing = Config.Chests[0].WallAndItemFrame ? 3 : 0;
+            int totalLayerHeight = width + Config.Chests[0].LayerHeight + spacing;
+
+            int ClearHeight = hight + (layers - 1) * totalLayerHeight;
 
             for (int x = posX; x < posX + width * count; x++)
             {
@@ -684,14 +695,50 @@ namespace SpawnInfra
                 for (int i = 0; i < count; i++)
                 {
                     int currentXPos = posX + i * width;
-                    int currentYPos = posY - (layer * (width + Config.Chests[0].LayerHeight));
+                    int currentYPos = posY - (layer * totalLayerHeight);
 
+                    // 先放置平台
                     for (int wx = currentXPos; wx < currentXPos + width; wx++)
                     {
                         WorldGen.PlaceTile(wx, currentYPos + 1, Config.Chests[0].ChestPlatformID, false, true, -1, Config.Chests[0].ChestPlatformStyle);
                     }
 
+                    // 再放置箱子
                     WorldGen.PlaceTile(currentXPos, currentYPos, Config.Chests[0].ChestTileID, false, true, -1, Config.Chests[0].ChestStyle);
+
+                    // 如果启用了墙壁和物品框，则在上方添加
+                    if (Config.Chests[0].WallAndItemFrame)
+                    {
+                        // 在箱子正上方 3 格空间中全部放满墙（仅当前箱子占用的 X 坐标）
+                        for (int wx = currentXPos; wx < currentXPos + width; wx++)
+                        {
+                            for (int wy = currentYPos; wy >= currentYPos - spacing; wy--)
+                            {
+                                //再清一遍树
+                                Main.tile[wx, currentYPos - spacing].ClearEverything();
+                                // 铺满墙
+                                WorldGen.PlaceWall(wx, wy, Config.Chests[0].WallID, false);
+                            }
+                        }
+
+                        // 物品框（顶部）
+                        for (int wx = currentXPos; wx < currentXPos + width; wx++)
+                        {
+                            //检查上面一层是否是墙
+                            if (Main.tile[wx, currentYPos - spacing].wall == Config.Chests[0].WallID)
+                            {
+                                //放置物品框
+                                WorldGen.PlaceObject(wx, currentYPos - spacing, Config.Chests[0].ItemFrameID, false, 4, -1, -1);
+
+                                // 如果是物品框则激活它
+                                if (Main.tile[wx, currentYPos - spacing].type == Config.Chests[0].ItemFrameID)
+                                {
+                                    Main.tile[wx, currentYPos - spacing].active(true);
+                                    Terraria.GameContent.Tile_Entities.TEItemFrame.Place(wx, currentYPos - spacing);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
