@@ -23,7 +23,7 @@ internal class Configuration
     public string Text7 { get; set; } = "[设置刷怪率]需所有在线玩家在刷怪场中心且击败[肉山]后生效";
 
     [JsonProperty("开服自动基建", Order = -10)]
-    public bool Enabled { get; set; } = true;
+    public bool Enabled { get; set; } = false;
 
     [JsonProperty("开服指令表", Order = -1)]
     public string[] CommandList { get; set; } = new string[] { };
@@ -265,12 +265,11 @@ internal class Configuration
         public bool Dart { get; set; } = true;
 
         [JsonProperty("设置刷怪率", Order = 15)]
-        public bool SpawnRate { get; set; } = true;
+        public bool SpawnRate { get; set; } = false;
         [JsonProperty("刷怪间隔/帧", Order = 15)]
         public int defaultSpawnRate { get; set; }
         [JsonProperty("刷怪上限/个", Order = 15)]
         public int defaultMaxSpawns { get; set; }
-
 
         public ItemData3(ushort id, ushort id2, ushort platformID, int platformstyle, int tileX, int tileY, int width, int platformY, int width2, int height, int width3, int center, int deSpawn, int MaxSpawn)
         {
@@ -323,7 +322,7 @@ internal class Configuration
 
         this.Chests = new List<ItemData1>
             {
-                new ItemData1(-38,34,2,18,8,0,2,21,1,19,43,155,395)
+                new ItemData1(-38,34,2,18,8,0,2,21,-1,19,43,318,395)
             };
 
         this.WorldPlatform = new List<ItemData2>
