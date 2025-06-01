@@ -9,10 +9,24 @@
 - 在世界轨道能找到微光湖直通车(底下放了雨云块防摔)
 - 在出生点左下角生成8*14个箱子
 - 从地狱层往下深40格生成地狱平台与轨道
-- 或使用指令在当前位置创建个监狱（/rm 数量）
+- 允许使用指令生成基础建筑
 
 ## 更新日志
 ```
+v1.5.9
+指令加入了生成宝物箱、陷阱、罐子、生命水晶、附魔剑冢、金字塔、恶魔祭坛功能
+添加了/spi s [1/2]指令，可用来构建选区提供给以下指令使用：
+- /spi c 清理选区所有图格
+- /spi t 清选区并放置手上方块
+- /spi w 清选区并放置手上墙壁
+- /spi yt 清选区并放置液体(水/蜂蜜/岩浆/微光)
+- /spi bz [1/2/3/4] 将选区内的方块设为半砖
+spawninfra.use权限只能使用：
+选区、清理、放置方块、放置液体、放置墙壁、设置半砖
+房屋、鱼池、刷怪场、世界平台、直通车、战斗平台、恶魔祭坛指令
+spawninfra.admin权限独享：
+监狱、仓库、地牢、神庙、陷阱、罐子、微光湖、宝物箱、金字塔、生命水晶、附魔剑冢生成指令
+
 v1.5.8
 完善指令系统，允许玩家在游戏中使用指令生成指定建筑
 指令权限改为：spawninfra.use与spawninfra.admin
@@ -113,18 +127,32 @@ v1.0.0
 ## 指令
 | 语法                             | 别名  |       权限       |                   说明                   |
 | -------------------------------- | :---: | :--------------: | :--------------------------------------: |
+| /spi | /基建 |  spawninfra.use    |    指令菜单    |
+| /spi s [1/2] | /基建 选择 |  spawninfra.use    |    修改指定选择区域(画矩形)    |
+| /spi c | /基建 清理 |  spawninfra.use    |    清理选区所有图格    |
+| /spi t | /基建 方块 |  spawninfra.use    |    清选区并放置手上方块    |
+| /spi w | /基建 墙壁 |  spawninfra.use    |    清选区并放置手上墙壁    |
+| /spi yt 水 | /基建 液体 |  spawninfra.use    |    清选区并放置液体(水/蜂蜜/岩浆/微光)    |
+| /spi bz [1/2/3/4] | /基建 半砖 |  spawninfra.use    |    将选区内的方块设为半砖    |
 | /spi r 数量 | /基建 房子 |  spawninfra.use    |    在当前位置建小房子    |
-| /spi hs | /基建 监狱 |  spawninfra.use    |    脚下生成监狱集群    |
-| /spi c | /基建 箱子 |  spawninfra.use    |    脚下生成箱子集群    |
-| /spi d | /基建 地牢 |  spawninfra.use    |    生成地牢(天顶需去地表使用)    |
-| /spi sm | /基建 神庙 |  spawninfra.use    |    生成神庙    |
-| /spi v | /基建 微光 |  spawninfra.use    |    生成微光湖    |
+| /spi hs | /基建 监狱 |  spawninfra.admin    |    脚下生成监狱    |
+| /spi ck | /基建 仓库 |  spawninfra.admin    |    脚下生成仓库    |
+| /spi dl | /基建 地牢 |  spawninfra.admin    |    生成地牢(天顶需去地表使用)    |
+| /spi sm | /基建 神庙 |  spawninfra.admin    |    生成神庙    |
+| /spi wg | /基建 微光 |  spawninfra.admin    |    生成微光湖    |
+| /spi bx | /基建 宝箱 |  spawninfra.admin    |    生成宝物箱    |
+| /spi xj | /基建 陷阱 |  spawninfra.admin    |    生成陷阱    |
+| /spi gz | /基建 罐子 |  spawninfra.admin    |    生成罐子    |
+| /spi sj | /基建 水晶 |  spawninfra.admin    |    生成生命水晶    |
+| /spi jt | /基建 祭坛 |  spawninfra.use    |    生成恶魔祭坛    |
+| /spi jz | /基建 剑冢 |  spawninfra.admin    |    生成附魔剑冢    |
+| /spi jzt | /基建 金字塔 |  spawninfra.admin    |    生成金字塔    |
 | /spi sg 高度 宽度 | /基建 刷怪场 |  spawninfra.use    |    生成刷怪场    |
 | /spi yc 水 | /基建 鱼池 |  spawninfra.use    |    生成鱼池(水/蜂蜜/岩浆/微光)    |
-| /spi zt | /基建 直通车 |  spawninfra.use    |    脚下生成直通车(天顶为头上)    |
+| /spi zt | /基建 直通车 |  spawninfra.use    |    生成直通车(天顶为头上)    |
 | /spi wp 清理高度 | /基建 世界平台 |  spawninfra.use    |    以手上方块生成世界平台    |
 | /spi fp 宽 高 间隔 | /基建 战斗平台 |  spawninfra.use    |    以手上方块生成战斗平台    |
-| /spi rs | /基建 重置 |  spawninfra.admin    |    重置配置开关:开服自动建监狱   |
+| /spi rs | /基建 重置 |  spawninfra.admin    |    重置配置开关:开服自动基建   |
 
 
 ## 配置

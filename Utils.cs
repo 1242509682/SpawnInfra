@@ -1,4 +1,6 @@
 ﻿using TShockAPI;
+using Terraria;
+using Microsoft.Xna.Framework;
 
 namespace SpawnInfra
 {

@@ -15,7 +15,7 @@ namespace SpawnInfra
         #region 插件信息
         public override string Name => "生成基础建设";
         public override string Author => "羽学";
-        public override Version Version => new Version(1, 5, 8);
+        public override Version Version => new Version(1, 5, 9);
         public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
         #endregion
 
@@ -1229,11 +1229,13 @@ namespace SpawnInfra
                     pondTheme.SetGlass();
                     break;
             }
+
             ushort tile = pondTheme.tile;
             TileInfo platform = pondTheme.platform;
             int num = posX - 6;
             int num2 = 13;
             int num3 = 32;
+
             for (int i = num; i < num + num2; i++)
             {
                 for (int j = posY; j < posY + num3; j++)
@@ -1250,6 +1252,7 @@ namespace SpawnInfra
                 }
                 WorldGen.PlaceTile(i, posY, platform.id, false, true, -1, platform.style);
             }
+
             for (int k = num + 1; k < num + num2 - 1; k++)
             {
                 for (int l = posY + 1; l < posY + num3 - 1; l++)

@@ -3,6 +3,8 @@ using Terraria;
 using Microsoft.Xna.Framework;
 using static SpawnInfra.Plugin;
 using static MonoMod.InlineRT.MonoModRule;
+using System.ComponentModel;
+using static Org.BouncyCastle.Asn1.Cmp.Challenge;
 
 namespace SpawnInfra;
 
@@ -12,22 +14,42 @@ internal class Commands
     {
         TSPlayer plr = args.Player;
 
-        if (args.Parameters.Count == 0)
+        //随机颜色
+        Random rand = new Random();
+        int r = rand.Next(150, 256);
+        int g = rand.Next(150, 256);
+        int b = rand.Next(150, 256);
+        var color = new Color(r, g, b);
+
+        if (args.Parameters.Count >= 0)
         {
-            var color = new Color(240, 250, 150);
-            plr.SendMessage("《生成基建》by 羽学", color);
-            plr.SendMessage("/spi r 数量 —— 建小房子", color);
-            plr.SendMessage("/spi hs —— 脚下生成监狱集群", color);
-            plr.SendMessage("/spi c —— 脚下生成箱子集群", color);
-            plr.SendMessage("/spi d —— 生成地牢", color);
-            plr.SendMessage("/spi sm —— 生成神庙", color);
-            plr.SendMessage("/spi v —— 生成微光湖", color);
-            plr.SendMessage("/spi sg 70 85 —— 生成刷怪场", color);
-            plr.SendMessage("/spi yc 水 —— 生成鱼池(水/蜂蜜/岩浆/微光)", color);
-            plr.SendMessage("/spi zt —— 脚下生成直通车(天顶为头上)", color);
-            plr.SendMessage("/spi wp 清理高度 —— 以手上方块生成世界平台", color);
-            plr.SendMessage("/spi fp 宽 高 间隔 —— 以手上方块生成战斗平台", color);
-            plr.SendMessage("/spi rs —— 开服自动在出生点基建", color);
+            plr.SendInfoMessage("\n《生成基建》 [i:3456][C/F2F2C7:插件开发] [C/BFDFEA:by] [c/00FFFF:羽学][i:3459]");
+
+            int Page = 1; // 默认第一页
+            if (args.Parameters.Count >= 1 && int.TryParse(args.Parameters[0], out int Pages))
+            {
+                Page = Pages;
+            }
+
+            var result = GetCommandsPage(plr, Page);
+            var show = result.Item1;
+            int all = result.Item2;
+
+            foreach (var cmd in show)
+            {
+                plr.SendMessage(cmd, color);
+            }
+
+            if (Page < all)
+            {
+                plr.SendInfoMessage($"/spi {Page + 1} 下一页");
+            }
+            if (Page > 1)
+            {
+                plr.SendInfoMessage($"/spi {Page - 1} 上一页");
+            }
+
+            plr.SendInfoMessage($"当前 {Page} 页,共计 {all} 页\n");
         }
 
         if (args.Parameters.Count >= 1)
@@ -36,8 +58,209 @@ internal class Commands
 
             switch (args.Parameters[0].ToLower())
             {
-                case "房子":
+                case "s":
+                case "set":
+                case "选择":
+                    {
+                        if (NeedInGame()) return;
+                        if (args.Parameters.Count < 2)
+                        {
+                            plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
+                            plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
+                            plr.SendMessage("清理选区所有图格: /spi c", color);
+                            plr.SendMessage("清选区并放手上方块: /spi t", color);
+                            plr.SendMessage("清选区并放手上墙壁: /spi w", color);
+                            plr.SendMessage("清选区并放液体:/spi yt (水/岩浆/蜂蜜/微光)", color);
+                            plr.SendMessage("将选区方块设为半砖:/spi bz 1到4", color);
+                            break;
+                        }
+
+                        switch (args.Parameters[1].ToLower())
+                        {
+                            case "1":
+                                plr.AwaitingTempPoint = 1;
+                                plr.SendInfoMessage("请选择放置或挖掘左上角方块,画出矩形");
+                                break;
+                            case "2":
+                                plr.AwaitingTempPoint = 2;
+                                plr.SendInfoMessage("请选择放置或挖掘右下角方块,画出矩形");
+                                break;
+                            default:
+                                plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
+                                plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
+                                plr.SendMessage("清理区域所有: /spi c", color);
+                                plr.SendMessage("清选区并放手上方块: /spi t", color);
+                                plr.SendMessage("清选区并放手上墙壁: /spi w", color);
+                                plr.SendMessage("清理选区并放液体:/spi yt 水 岩浆 蜂蜜 微光", color);
+                                plr.SendMessage("将选区方块设为半砖:/spi bz 1到4", color);
+                                break;
+                        }
+                    }
+                    break;
+
+                case "c":
+                case "clear":
+                case "清理":
+                    {
+                        if (NeedInGame()) return;
+                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                        {
+                            plr.SendInfoMessage("您还没有选择区域！");
+                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                            return;
+                        }
+
+                        await AsyncClear(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y);
+                    }
+                    break;
+
+                case "t":
+                case "方块":
+                    {
+                        if (NeedInGame()) return;
+
+                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                        {
+                            plr.SendInfoMessage("您还没有选择区域！");
+                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                            return;
+                        }
+
+                        var Sel = plr.SelectedItem; //获取玩家手上方块
+                        if (Sel.createTile < 0)
+                        {
+                            plr.SendErrorMessage("请你手持需要放置的方块");
+                            return;
+                        }
+                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile);
+                    }
+                    break;
+
+                case "bz":
+                case "半砖":
+                case "Slope":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        var type = 0;
+
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "1":
+                                case "右斜坡":
+                                    type = 1;
+                                    break;
+                                case "2":
+                                case "左斜坡":
+                                    type = 2;
+                                    break;
+                                case "3":
+                                case "右半砖":
+                                    type = 3;
+                                    break;
+                                case "4":
+                                case "左半砖":
+                                    type = 4;
+                                    break;
+                                default:
+                                    plr.SendInfoMessage("正确格式为:/spi bz 1到4");
+                                    plr.SendMessage("1 - 右斜坡",color);
+                                    plr.SendMessage("2 - 左斜坡", color);
+                                    plr.SendMessage("3 - 右半砖", color);
+                                    plr.SendMessage("4 - 左半砖", color);
+                                    plr.SendInfoMessage("电梯常用1/2 推怪常用3/4");
+                                    return;
+                            }
+                        }
+                        else
+                        {
+                            plr.SendInfoMessage("正确格式为:/spi bz 1到4");
+                            plr.SendMessage("1 - 右斜坡", color);
+                            plr.SendMessage("2 - 左斜坡", color);
+                            plr.SendMessage("3 - 右半砖", color);
+                            plr.SendMessage("4 - 左半砖", color);
+                            plr.SendInfoMessage("电梯常用1/2 推怪常用3/4");
+                            return;
+                        }
+
+                        await AsyncSetSlope(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, type);
+                    }
+                    break;
+
+                case "w":
+                case "墙":
+                case "墙壁":
+                    {
+                        if (NeedInGame()) return;
+                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                        {
+                            plr.SendInfoMessage("您还没有选择区域！");
+                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                            return;
+                        }
+
+                        var Sel = plr.SelectedItem; //获取玩家手上方块
+                        if (Sel.createWall < 0)
+                        {
+                            plr.SendErrorMessage("请你手持需要放置的墙壁");
+                            return;
+                        }
+
+                        await AsyncPlaceWall(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createWall);
+                    }
+                    break;
+
+                case "yt":
+                case "液体":
+                    {
+                        if (NeedInGame()) return;
+                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                        {
+                            plr.SendInfoMessage("您还没有选择区域！");
+                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                            return;
+                        }
+
+                        int type = 0;
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "水":
+                                case "water":
+                                    type = 0;
+                                    break;
+                                case "岩浆":
+                                case "lava":
+                                    type = 1;
+                                    break;
+                                case "蜂蜜":
+                                case "honey":
+                                    type = 2;
+                                    break;
+                                case "微光":
+                                case "shimmer":
+                                    type = 3;
+                                    break;
+                                default:
+                                    plr.SendErrorMessage("鱼池风格不对正确格式为:/spi yt 水、岩浆、蜂蜜、微光");
+                                    return;
+                            }
+                        }
+
+                        await Asynclinquid(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, type);
+                    }
+                    break;
+
                 case "r":
+                case "房子":
+                case "屋子":
+                case "房屋":
                 case "room":
                     {
                         if (NeedInGame()) return;
@@ -65,27 +288,28 @@ internal class Commands
                     }
                     break;
 
-                case "监狱":
                 case "hs":
+                case "监狱":
+                case "别墅":
                 case "house":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
                         await AsyncGenLargeHouse(plr, plr.TileX, plr.TileY);
                     }
                     break;
 
-                case "箱子":
-                case "c":
+                case "仓库":
+                case "ck":
                 case "Chest":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
                         await AsyncSpawnChest(plr, plr.TileX, plr.TileY);
                     }
                     break;
 
-                case "鱼池":
                 case "yc":
-                case "p":
+                case "水池":
+                case "鱼池":
                 case "pond":
                     {
                         if (NeedInGame()) return;
@@ -119,21 +343,21 @@ internal class Commands
                         break;
                     }
 
-                case "神庙":
-                case "t":
                 case "sm":
+                case "神庙":
                 case "Temple":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
                         await AsyncTemple(plr, plr.TileX, plr.TileY);
                     }
                     break;
 
-                case "地牢":
                 case "d":
+                case "dl":
+                case "地牢":
                 case "Dungeon":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
                         if ((Main.zenithWorld || Main.remixWorld) && plr.TileY < Main.worldSurface)
                         {
                             plr.SendErrorMessage("当前为颠倒种子,请前往地表生成地牢");
@@ -144,18 +368,21 @@ internal class Commands
                     }
                     break;
 
+                case "v":
+                case "wg":
+                case "wgh":
                 case "微光":
                 case "微光湖":
-                case "v":
                 case "Shimmer":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
                         await AsyncShimmer(plr, plr.TileX, plr.TileY);
                     }
                     break;
 
-                case "刷怪场":
                 case "sg":
+                case "刷怪":
+                case "刷怪场":
                 case "Brush":
                     {
                         if (NeedInGame()) return;
@@ -181,9 +408,9 @@ internal class Commands
                     }
                     break;
 
-                case "直通车":
                 case "h":
                 case "zt":
+                case "直通车":
                 case "hell":
                     {
                         if (NeedInGame()) return;
@@ -191,9 +418,9 @@ internal class Commands
                     }
                     break;
 
+                case "wp":
                 case "世平":
                 case "世界平台":
-                case "wp":
                 case "WorldPlatform":
                     {
                         if (NeedInGame()) return;
@@ -222,9 +449,9 @@ internal class Commands
                     }
                     break;
 
+                case "fp":
                 case "战平":
                 case "战斗平台":
-                case "fp":
                 case "FightPlatforms":
                     {
                         if (NeedInGame()) return;
@@ -257,6 +484,79 @@ internal class Commands
                     }
                     break;
 
+                case "bx":
+                case "宝箱":
+                case "箱子":
+                case "NewChest":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+
+                        await AsyncBuriedChest(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
+                case "gz":
+                case "pot":
+                case "罐子":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+
+                        await AsyncPlacePot(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
+                case "sj":
+                case "水晶":
+                case "生命水晶":
+                case "LifeCrystal":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+
+                        await AsyncLifeCrystal(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
+                case "jt":
+                case "祭坛":
+                case "Altar":
+                    {
+                        if (NeedInGame()) return;
+
+                        await AsyncAltar(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
+                case "jz":
+                case "剑冢":
+                case "附魔剑":
+                case "sword":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+
+                        await AsyncSword(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
+                case "jzt":
+                case "金字塔":
+                case "Pyramid":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+
+                        await AsyncPyramid(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
+                case "xj":
+                case "陷阱":
+                case "Trap":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+
+                        await AsyncTrap(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
                 case "重置":
                 case "rs":
                 case "reset":
@@ -275,6 +575,54 @@ internal class Commands
         bool NeedInGame() => Utils.NeedInGame(plr);
         bool NeedWaitTask() => TileHelper.NeedWaitTask(plr);
     }
+
+    #region 获取指令页数
+    private static Tuple<List<string>, int> GetCommandsPage(TSPlayer plr, int page)
+    {
+        // 每页显示的命令数量
+        int PerPage = 7;
+        // 根据权限准备命令列表
+        var commands = new List<string>
+        {
+            "/spi s [1/2] —— 修改指定选择区域(画矩形)",
+            "/spi r 数量 —— 建小房子",
+            "/spi hs —— 脚下生成监狱",
+            "/spi ck —— 脚下生成仓库",
+            "/spi dl —— 生成地牢",
+            "/spi sm —— 生成神庙",
+            "/spi wg —— 生成微光湖",
+            "/spi sg 70 85 —— 生成刷怪场",
+            "/spi yc 水 —— 生成鱼池(水/蜂蜜/岩浆/微光)",
+            "/spi zt —— 脚下生成直通车(天顶为头上)",
+            "/spi wp 清理高度 —— 以手上方块生成世界平台",
+            "/spi fp 宽 高 间隔 —— 以手上方块生成战斗平台",
+            "/spi bx —— 生成宝物箱",
+            "/spi xj —— 生成陷阱",
+            "/spi gz —— 生成罐子",
+            "/spi sj —— 生成生命水晶",
+            "/spi jt —— 生成恶魔祭坛",
+            "/spi jz —— 生成附魔剑冢",
+            "/spi jzt —— 生成金字塔",
+            "/spi rs —— 开服自动在出生点基建"
+        };
+
+        // 如果没有管理员权限，则移除一些命令
+        if (!plr.HasPermission("spawninfra.admin"))
+        {
+            commands.RemoveAll(cmd => cmd.Contains("hs") || cmd.Contains("ck") || cmd.Contains("dl") || cmd.Contains("sm") || cmd.Contains("wg") || cmd.Contains("bx") || cmd.Contains("xj") || cmd.Contains("gz") || cmd.Contains("sj") || cmd.Contains("jt") || cmd.Contains("jz") || cmd.Contains("jzt") || cmd.Contains("rs"));
+        }
+
+        // 计算总页数
+        int total = (int)Math.Ceiling(commands.Count / (double)PerPage);
+        // 确保请求的页码有效
+        if (page < 1) page = 1;
+        if (page > total) page = total;
+
+        // 获取当前页应该显示的命令
+        int startIndex = (page - 1) * PerPage;
+        return Tuple.Create(commands.GetRange(startIndex, Math.Min(PerPage, commands.Count - startIndex)), total);
+    } 
+    #endregion
 
     #region 小房子
     public static Task AsyncGenRoom(TSPlayer plr, int posX, int posY, int total = 1, bool isRight = true, bool needCenter = false)
@@ -473,7 +821,6 @@ internal class Commands
     public static Task AsyncRockTrialField(TSPlayer plr, int posX, int posY, int Height, int Width)
     {
         int secondLast = Utils.GetUnixTimestamp;
-        var item = Config.HellTunnel[0];
         return Task.Run(delegate
         {
             RockTrialField2(posY - 9, posX, Height, Width, 2);
@@ -629,6 +976,274 @@ internal class Commands
         WorldGen.PlaceWire(CenterRight + 1, middle);
         WorldGen.PlaceTile(CenterLeft - 1, middle + 1, 144, false, true, -1, 4);
         WorldGen.PlaceTile(CenterRight + 1, middle + 1, 144, false, true, -1, 4);
+    }
+    #endregion
+
+    #region 金字塔
+    public static Task AsyncPyramid(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            WorldGen.Pyramid(posX, posY + 3);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成金字塔，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 宝物箱子
+    public static Task AsyncBuriedChest(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        ushort type = (ushort)(Random.Shared.Next(2) == 0 ? 21 : 467);
+        int Style = -1; // 默认样式为-1
+        if (type == 21)
+        {
+            var range = new List<int>();
+            var exclude = new List<int> { 2, 4, 36, 38, 40 }.Concat(Enumerable.Range(18, 10)).ToHashSet();
+            for (int j = 0; j <= 51; j++)
+            {
+                // 排除掉上锁的 或 环境6神器的宝箱
+                if (exclude.Contains(j)) continue;
+                range.Add(j);
+            }
+            Style = range[Random.Shared.Next(range.Count)];
+        }
+
+        if (type == 467)
+        {
+            var range = new List<int>();
+            var exclude = new int[] { 6, 7, 8, 9 };
+            for (int j = 1; j <= 14; j++)
+            {
+                if (exclude.Contains(j)) continue;
+                range.Add(j);
+            }
+            Style = range[Random.Shared.Next(range.Count)];
+        }
+
+        return Task.Run(delegate
+        {
+            Main.tile[posX, posY + 2].ClearEverything();
+            WorldGen.AddBuriedChest(posX, posY + 3, contain: 0, false, Style, false, chestTileType: type);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成自然箱子，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 生命水晶生成
+    public static Task AsyncLifeCrystal(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            Main.tile[posX, posY + 2].ClearEverything();
+            WorldGen.AddLifeCrystal(posX, posY + 3);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成生命水晶，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 罐子随机生成（样式0到36）
+    public static Task AsyncPlacePot(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            Main.tile[posX, posY + 2].ClearEverything();
+            WorldGen.PlacePot(posX, posY + 2, 28, Random.Shared.Next(0, 37));
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成罐子，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 陷阱
+    public static Task AsyncTrap(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            Main.tile[posX, posY + 2].ClearEverything();
+            WorldGen.placeTrap(posX, posY + 3);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成陷阱，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 附魔剑冢
+    public static Task AsyncSword(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            Main.tile[posX, posY + 2].ClearEverything();
+            WorldGen.PlaceTile(posX, posY + 2, 187, true, false, -1, 17);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成附魔剑冢，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 邪恶祭坛随机生成0或1（0是恶魔祭坛 1是猩红祭坛）
+    public static Task AsyncAltar(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            Main.tile[posX, posY + 2].ClearEverything();
+            WorldGen.Place3x2(posX, posY + 2, 26, Random.Shared.Next(2));
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成邪恶祭坛，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 清理选区
+    public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(() =>
+        {
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    Main.tile[x, y].ClearEverything();
+                    WorldGen.PlaceWall(x, y, 2);
+                }
+            }
+        }).ContinueWith(_ =>
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已清理区域，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 生成方块
+    public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(() =>
+        {
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    Main.tile[x, y].ClearEverything();
+                    WorldGen.PlaceTile(x, y, TileID);
+                }
+            }
+        }).ContinueWith(_ =>
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成方块，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 生成液体
+    public static Task Asynclinquid(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(() =>
+        {
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    Main.tile[x, y].ClearEverything();
+                    Main.tile[x, y].liquid = byte.MaxValue;
+                    Main.tile[x, y].liquidType(type);
+                }
+            }
+        }).ContinueWith(_ =>
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成液体，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 生成墙壁
+    public static Task AsyncPlaceWall(TSPlayer plr, int startX, int startY, int endX, int endY, int wallID)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(() =>
+        {
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    Main.tile[x, y].ClearEverything();
+                    WorldGen.PlaceWall(x, y, wallID);
+                }
+            }
+        }).ContinueWith(_ =>
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成墙壁，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 设为半砖
+    public static Task AsyncSetSlope(TSPlayer plr, int startX, int startY, int endX, int endY, int SlopeID)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    WorldGen.SlopeTile(x, y, SlopeID);
+                }
+            }
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已将方块设为半砖，用时{value}秒。");
+        });
     }
     #endregion
 
