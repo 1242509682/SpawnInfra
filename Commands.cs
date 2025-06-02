@@ -1,10 +1,7 @@
-﻿using TShockAPI;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
-using Microsoft.Xna.Framework;
+using TShockAPI;
 using static SpawnInfra.Plugin;
-using static MonoMod.InlineRT.MonoModRule;
-using System.ComponentModel;
-using static Org.BouncyCastle.Asn1.Cmp.Challenge;
 
 namespace SpawnInfra;
 
@@ -21,35 +18,10 @@ internal class Commands
         int b = rand.Next(150, 256);
         var color = new Color(r, g, b);
 
-        if (args.Parameters.Count >= 0)
+        if (args.Parameters.Count == 0)
         {
             plr.SendInfoMessage("\n《生成基建》 [i:3456][C/F2F2C7:插件开发] [C/BFDFEA:by] [c/00FFFF:羽学][i:3459]");
-
-            int Page = 1; // 默认第一页
-            if (args.Parameters.Count >= 1 && int.TryParse(args.Parameters[0], out int Pages))
-            {
-                Page = Pages;
-            }
-
-            var result = GetCommandsPage(plr, Page);
-            var show = result.Item1;
-            int all = result.Item2;
-
-            foreach (var cmd in show)
-            {
-                plr.SendMessage(cmd, color);
-            }
-
-            if (Page < all)
-            {
-                plr.SendInfoMessage($"/spi {Page + 1} 下一页");
-            }
-            if (Page > 1)
-            {
-                plr.SendInfoMessage($"/spi {Page - 1} 上一页");
-            }
-
-            plr.SendInfoMessage($"当前 {Page} 页,共计 {all} 页\n");
+            Help(args, plr, color, 1);
         }
 
         if (args.Parameters.Count >= 1)
@@ -58,6 +30,20 @@ internal class Commands
 
             switch (args.Parameters[0].ToLower())
             {
+                case "help":
+                case "h":
+                    {
+                        int Page = 1; // 默认第一页
+                        if (args.Parameters.Count >= 2 && int.TryParse(args.Parameters[1], out int Pages))
+                        {
+                            Page = Pages;
+                        }
+
+                        plr.SendInfoMessage("\n《生成基建》 [i:3456][C/F2F2C7:插件开发] [C/BFDFEA:by] [c/00FFFF:羽学][i:3459]");
+                        Page = Help(args, plr, color, Page);
+                    }
+                    break;
+
                 case "s":
                 case "set":
                 case "选择":
@@ -167,7 +153,7 @@ internal class Commands
                                     break;
                                 default:
                                     plr.SendInfoMessage("正确格式为:/spi bz 1到4");
-                                    plr.SendMessage("1 - 右斜坡",color);
+                                    plr.SendMessage("1 - 右斜坡", color);
                                     plr.SendMessage("2 - 左斜坡", color);
                                     plr.SendMessage("3 - 右半砖", color);
                                     plr.SendMessage("4 - 左半砖", color);
@@ -408,7 +394,6 @@ internal class Commands
                     }
                     break;
 
-                case "h":
                 case "zt":
                 case "直通车":
                 case "hell":
@@ -557,6 +542,16 @@ internal class Commands
                     }
                     break;
 
+                case "fh":
+                case "腐化":
+                case "腐化地":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+
+                        await AsyncChasmRunner(plr, plr.TileX, plr.TileY);
+                    }
+                    break;
+
                 case "重置":
                 case "rs":
                 case "reset":
@@ -575,6 +570,37 @@ internal class Commands
         bool NeedInGame() => Utils.NeedInGame(plr);
         bool NeedWaitTask() => TileHelper.NeedWaitTask(plr);
     }
+
+    #region 帮助菜单
+    private static int Help(CommandArgs args, TSPlayer plr, Color color, int Page)
+    {
+        if (args.Parameters.Count >= 1 && int.TryParse(args.Parameters[0], out int Pages))
+        {
+            Page = Pages;
+        }
+
+        var result = GetCommandsPage(plr, Page);
+        var show = result.Item1;
+        int all = result.Item2;
+
+        foreach (var cmd in show)
+        {
+            plr.SendMessage(cmd, color);
+        }
+
+        if (Page < all)
+        {
+            plr.SendInfoMessage($"/spi help {Page + 1} 下一页");
+        }
+        if (Page > 1)
+        {
+            plr.SendInfoMessage($"/spi help {Page - 1} 上一页");
+        }
+
+        plr.SendInfoMessage($"当前 {Page} 页,共计 {all} 页\n");
+        return Page;
+    }
+    #endregion
 
     #region 获取指令页数
     private static Tuple<List<string>, int> GetCommandsPage(TSPlayer plr, int page)
@@ -603,13 +629,14 @@ internal class Commands
             "/spi jt —— 生成恶魔祭坛",
             "/spi jz —— 生成附魔剑冢",
             "/spi jzt —— 生成金字塔",
+            "/spi fh —— 生成腐化地",
             "/spi rs —— 开服自动在出生点基建"
         };
 
         // 如果没有管理员权限，则移除一些命令
         if (!plr.HasPermission("spawninfra.admin"))
         {
-            commands.RemoveAll(cmd => cmd.Contains("hs") || cmd.Contains("ck") || cmd.Contains("dl") || cmd.Contains("sm") || cmd.Contains("wg") || cmd.Contains("bx") || cmd.Contains("xj") || cmd.Contains("gz") || cmd.Contains("sj") || cmd.Contains("jt") || cmd.Contains("jz") || cmd.Contains("jzt") || cmd.Contains("rs"));
+            commands.RemoveAll(cmd => cmd.Contains("hs") || cmd.Contains("ck") || cmd.Contains("dl") || cmd.Contains("sm") || cmd.Contains("wg") || cmd.Contains("bx") || cmd.Contains("xj") || cmd.Contains("gz") || cmd.Contains("sj") || cmd.Contains("jt") || cmd.Contains("jz") || cmd.Contains("jzt") || cmd.Contains("rs") || cmd.Contains("fh"));
         }
 
         // 计算总页数
@@ -621,7 +648,7 @@ internal class Commands
         // 获取当前页应该显示的命令
         int startIndex = (page - 1) * PerPage;
         return Tuple.Create(commands.GetRange(startIndex, Math.Min(PerPage, commands.Count - startIndex)), total);
-    } 
+    }
     #endregion
 
     #region 小房子
@@ -837,7 +864,7 @@ internal class Commands
     #region 刷怪场2
     public static void RockTrialField2(int posY, int posX, int Height, int Width, int Center)
     {
-        // 直接使用 posY 作为基准点
+        // 直接使用 y 作为基准点
         var top = posY - Height;   // 顶部位置
         var bottom = posY + Height; // 底部位置
         var middle = (top + bottom) / 2 + Center; // 中心位置
@@ -1243,6 +1270,24 @@ internal class Commands
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已将方块设为半砖，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 腐化地
+    public static Task AsyncChasmRunner(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            Main.tile[posX, posY + 2].ClearEverything();
+            WorldGen.ChasmRunner(posX, posY + 3, Random.Shared.Next(10), true);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成腐化地，用时{value}秒。");
         });
     }
     #endregion
