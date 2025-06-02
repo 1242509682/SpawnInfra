@@ -1,7 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.ID;
 using TShockAPI;
 using static SpawnInfra.Plugin;
+using static SpawnInfra.Utils;
 
 namespace SpawnInfra;
 
@@ -51,13 +53,16 @@ internal class Commands
                         if (NeedInGame()) return;
                         if (args.Parameters.Count < 2)
                         {
+                            plr.SendInfoMessage("\n请确保s1和s2两点不再同一位置,两点之间可形成'线'或者'方形'");
                             plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                             plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
-                            plr.SendMessage("清理选区所有图格: /spi c", color);
-                            plr.SendMessage("清选区并放手上方块: /spi t", color);
-                            plr.SendMessage("清选区并放手上墙壁: /spi w", color);
-                            plr.SendMessage("清选区并放液体:/spi yt (水/岩浆/蜂蜜/微光)", color);
-                            plr.SendMessage("将选区方块设为半砖:/spi bz 1到4", color);
+                            plr.SendMessage("清理区域: /spi c 1到4 (1方块/2墙/3液体/4所有)", color);
+                            plr.SendMessage("根据选区放手上方块: /spi t (1清完放置/2保留放置)", color);
+                            plr.SendMessage("根据选区放手上墙壁: /spi w (1清完放置/2保留放置)", color);
+                            plr.SendMessage("根据选区放手上喷漆: /spi p (1喷方块/2喷墙/3所有)", color);
+                            plr.SendMessage("清选区并放液体:/spi yt 1到4(水/岩浆/蜂蜜/微光)", color);
+                            plr.SendMessage("将选区方块设为半砖:/spi bz 1到4（1右斜坡,2左斜坡,3右半砖,4左半砖）", color);
+                            plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放并虚化加制动器）", color);
                             break;
                         }
 
@@ -65,20 +70,23 @@ internal class Commands
                         {
                             case "1":
                                 plr.AwaitingTempPoint = 1;
-                                plr.SendInfoMessage("请选择放置或挖掘左上角方块,画出矩形");
+                                plr.SendInfoMessage("请选择放置或挖掘左上角方块,画成: 线 或 方形");
                                 break;
                             case "2":
                                 plr.AwaitingTempPoint = 2;
-                                plr.SendInfoMessage("请选择放置或挖掘右下角方块,画出矩形");
+                                plr.SendInfoMessage("请选择放置或挖掘右下角方块,画成: 线 或 方形");
                                 break;
                             default:
+                                plr.SendInfoMessage("\n请确保s1和s2两点不再同一位置,两点之间可形成'线'或者'方形'");
                                 plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                                 plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
-                                plr.SendMessage("清理区域所有: /spi c", color);
-                                plr.SendMessage("清选区并放手上方块: /spi t", color);
-                                plr.SendMessage("清选区并放手上墙壁: /spi w", color);
-                                plr.SendMessage("清理选区并放液体:/spi yt 水 岩浆 蜂蜜 微光", color);
-                                plr.SendMessage("将选区方块设为半砖:/spi bz 1到4", color);
+                                plr.SendMessage("清理区域: /spi c 1到4 (1方块/2墙/3液体/4所有)", color);
+                                plr.SendMessage("根据选区放手上方块: /spi t 1和2 (1保留放置/2清完放置)", color);
+                                plr.SendMessage("根据选区放手上墙壁: /spi w 1和2 (1保留放置/2清完放置)", color);
+                                plr.SendMessage("根据选区放手上喷漆: /spi p 1和2 (1喷方块/2喷墙/3所有)", color);
+                                plr.SendMessage("清选区并放液体:/spi yt 1到4 (水/岩浆/蜂蜜/微光)", color);
+                                plr.SendMessage("将选区方块设为半砖:/spi bz 1到4（1右斜坡,2左斜坡,3右半砖,4左半砖）", color);
+                                plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放并虚化加制动器）", color);
                                 break;
                         }
                     }
@@ -97,12 +105,53 @@ internal class Commands
                             return;
                         }
 
-                        await AsyncClear(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y);
+                        int type = 0;
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "1":
+                                case "t":
+                                case "方块":
+                                case "block":
+                                    type = 1;
+                                    break;
+                                case "2":
+                                case "w":
+                                case "墙":
+                                case "墙壁":
+                                case "will":
+                                    type = 2;
+                                    break;
+                                case "3":
+                                case "yt":
+                                case "液体":
+                                case "linquid":
+                                    type = 3;
+                                    break;
+                                case "4":
+                                case "all":
+                                case "所有":
+                                    type = 4;
+                                    break;
+                                default:
+                                    plr.SendInfoMessage("正确格式为:/spi c 1到4(1方块/2墙/3液体/4所有)");
+                                    return;
+                            }
+                        }
+                        else
+                        {
+                            plr.SendInfoMessage("正确格式为:/spi c 1到4(1方块/2墙/3液体/4所有)");
+                            return;
+                        }
+
+                        await AsyncClear(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, type);
                     }
                     break;
 
                 case "t":
                 case "方块":
+                case "block":
                     {
                         if (NeedInGame()) return;
 
@@ -114,13 +163,37 @@ internal class Commands
                             return;
                         }
 
-                        var Sel = plr.SelectedItem; //获取玩家手上方块
+                        int type = 0;
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "1":
+                                case "保留":
+                                    type = 1;
+                                    break;
+                                case "2":
+                                case "清理":
+                                    type = 2;
+                                    break;
+                                default:
+                                    plr.SendInfoMessage("正确格式为:/spi t 1和2 (1保留原有放置/2清完所有后放置)");
+                                    return;
+                            }
+                        }
+                        else
+                        {
+                            plr.SendInfoMessage("正确格式为:/spi t 1和2 (1保留原有放置/2清完所有后放置)");
+                            return;
+                        }
+
+                        var Sel = plr.SelectedItem; //获取玩家手上物品
                         if (Sel.createTile < 0)
                         {
                             plr.SendErrorMessage("请你手持需要放置的方块");
                             return;
                         }
-                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile);
+                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile, type);
                     }
                     break;
 
@@ -189,19 +262,45 @@ internal class Commands
                             return;
                         }
 
-                        var Sel = plr.SelectedItem; //获取玩家手上方块
+                        int type = 0;
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "1":
+                                case "保留":
+                                    type = 1;
+                                    break;
+                                case "2":
+                                case "清理":
+                                    type = 2;
+                                    break;
+                                default:
+                                    plr.SendInfoMessage("正确格式为:/spi w 1和2 (1保留原有放置/2清完所有后放置)");
+                                    return;
+                            }
+                        }
+                        else
+                        {
+                            plr.SendInfoMessage("正确格式为:/spi w 1和2 (1保留原有放置/2清完所有后放置)");
+                            return;
+                        }
+
+                        var Sel = plr.SelectedItem; //获取玩家手上物品
                         if (Sel.createWall < 0)
                         {
                             plr.SendErrorMessage("请你手持需要放置的墙壁");
                             return;
                         }
 
-                        await AsyncPlaceWall(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createWall);
+                        await AsyncPlaceWall(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createWall, type);
                     }
                     break;
 
-                case "yt":
-                case "液体":
+                case "wr":
+                case "wire":
+                case "电路":
+                case "电线":
                     {
                         if (NeedInGame()) return;
                         if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
@@ -217,26 +316,148 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
+                                case "1":
+                                case "保留":
+                                    type = 1;
+                                    break;
+                                case "2":
+                                case "清理":
+                                    type = 2;
+                                    break;
+                                case "3":
+                                case "虚化":
+                                    type = 3;
+                                    break;
+                                case "4":
+                                case "制动器":
+                                    type = 4;
+                                    break;
+                                default:
+                                    plr.SendErrorMessage("正确格式为:/spi ct 1到4");
+                                    plr.SendInfoMessage("1 - 保留原有电线后放置");
+                                    plr.SendInfoMessage("2 - 清完电线后所有后放置)");
+                                    plr.SendInfoMessage("3 - 清电线后放置并虚化方块)");
+                                    plr.SendInfoMessage("4 - 清电线后放置再虚化后添加制动器)");
+                                    return;
+                            }
+                        }
+                        else
+                        {
+                            plr.SendErrorMessage("正确格式为:/spi ct 1到4");
+                            plr.SendInfoMessage("1 - 保留原有电线后放置");
+                            plr.SendInfoMessage("2 - 清完电线后所有后放置)");
+                            plr.SendInfoMessage("3 - 清电线后放置并虚化方块)");
+                            plr.SendInfoMessage("4 - 清电线后放置再虚化后添加制动器)");
+                            return;
+                        }
+
+                        await AsyncPlaceWire(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, type);
+                    }
+                    break;
+
+                case "p":
+                case "paint":
+                case "喷漆":
+                    {
+                        if (NeedInGame()) return;
+                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                        {
+                            plr.SendInfoMessage("您还没有选择区域！");
+                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                            return;
+                        }
+
+                        var Sel = plr.SelectedItem; //获取玩家手上物品
+                        if (Sel.paint < 0)
+                        {
+                            plr.SendErrorMessage("请你手持需要涂抹的喷漆");
+                            return;
+                        }
+
+                        int type = 0;
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "1":
+                                case "方块":
+                                case "block":
+                                    type = 1;
+                                    break;
+                                case "2":
+                                case "墙":
+                                case "墙壁":
+                                case "wall":
+                                    type = 2;
+                                    break;
+                                case "3":
+                                case "所有":
+                                case "all":
+                                    type = 3;
+                                    break;
+                                default:
+                                    plr.SendInfoMessage("正确格式为:/spi p 1到3(1方块/2墙壁/3所有)");
+                                    return;
+                            }
+                        }
+                        else
+                        {
+                            plr.SendInfoMessage("正确格式为:/spi p 1到3(1方块/2墙壁/3所有)");
+                            return;
+                        }
+
+                        await AsyncPlacePaint(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.paint, type);
+                    }
+                    break;
+
+                case "yt":
+                case "液体":
+                case "linquid":
+                    {
+                        if (NeedInGame()) return;
+                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                        {
+                            plr.SendInfoMessage("您还没有选择区域！");
+                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                            return;
+                        }
+
+                        int type = 0;
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "1":
                                 case "水":
                                 case "water":
                                     type = 0;
                                     break;
+                                case "2":
                                 case "岩浆":
                                 case "lava":
                                     type = 1;
                                     break;
+                                case "3":
                                 case "蜂蜜":
                                 case "honey":
                                     type = 2;
                                     break;
+                                case "4":
                                 case "微光":
                                 case "shimmer":
                                     type = 3;
                                     break;
                                 default:
-                                    plr.SendErrorMessage("鱼池风格不对正确格式为:/spi yt 水、岩浆、蜂蜜、微光");
+                                    plr.SendInfoMessage("正确格式为:/spi yt 1到4(水/岩浆/蜂蜜/微光)");
                                     return;
                             }
+                        }
+                        else
+                        {
+                            plr.SendInfoMessage("正确格式为:/spi yt 1到4(水/岩浆/蜂蜜/微光)");
+                            return;
                         }
 
                         await Asynclinquid(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, type);
@@ -850,6 +1071,7 @@ internal class Commands
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
+
             RockTrialField2(posY - 9, posX, Height, Width, 2);
 
         }).ContinueWith(delegate
@@ -880,8 +1102,14 @@ internal class Commands
         {
             for (var x = left; x < right; x++)
             {
+                if (Config.DisableBlock.Contains(Main.tile[x, y].type))
+                {
+                    TSPlayer.All.SendInfoMessage($"[刷怪场] {x}, {y} 位置遇到禁止方块，已停止放置。");
+                    return;
+                }
+
                 // 清除当前位置方块
-                Main.tile[x, y].ClearEverything();
+                ClearEverything(x, y);
 
                 // 顶部防液体层
                 WorldGen.PlaceTile(x, top, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
@@ -933,7 +1161,7 @@ internal class Commands
                         if (wallY >= middle - 10 - Center && wallY <= middle - 1 && x >= CenterLeft + 1 && x <= CenterRight - 1)
                         {
                             // 挖空方块
-                            Main.tile[x, wallY].ClearEverything();
+                            ClearEverything(x, wallY);
                         }
                         else
                         {
@@ -1056,7 +1284,7 @@ internal class Commands
 
         return Task.Run(delegate
         {
-            Main.tile[posX, posY + 2].ClearEverything();
+            ClearEverything(posX, posY + 2);
             WorldGen.AddBuriedChest(posX, posY + 3, contain: 0, false, Style, false, chestTileType: type);
 
         }).ContinueWith(delegate
@@ -1074,7 +1302,7 @@ internal class Commands
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
-            Main.tile[posX, posY + 2].ClearEverything();
+            ClearEverything(posX, posY + 2);
             WorldGen.AddLifeCrystal(posX, posY + 3);
 
         }).ContinueWith(delegate
@@ -1092,7 +1320,7 @@ internal class Commands
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
-            Main.tile[posX, posY + 2].ClearEverything();
+            ClearEverything(posX, posY + 2);
             WorldGen.PlacePot(posX, posY + 2, 28, Random.Shared.Next(0, 37));
 
         }).ContinueWith(delegate
@@ -1110,7 +1338,7 @@ internal class Commands
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
-            Main.tile[posX, posY + 2].ClearEverything();
+            ClearEverything(posX, posY + 2);
             WorldGen.placeTrap(posX, posY + 3);
 
         }).ContinueWith(delegate
@@ -1128,7 +1356,7 @@ internal class Commands
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
-            Main.tile[posX, posY + 2].ClearEverything();
+            ClearEverything(posX, posY + 2);
             WorldGen.PlaceTile(posX, posY + 2, 187, true, false, -1, 17);
 
         }).ContinueWith(delegate
@@ -1140,13 +1368,31 @@ internal class Commands
     }
     #endregion
 
+    #region 腐化地
+    public static Task AsyncChasmRunner(TSPlayer plr, int posX, int posY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            ClearEverything(posX, posY + 2);
+            WorldGen.ChasmRunner(posX, posY + 3, Random.Shared.Next(10), true);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成腐化地，用时{value}秒。");
+        });
+    }
+    #endregion
+
     #region 邪恶祭坛随机生成0或1（0是恶魔祭坛 1是猩红祭坛）
     public static Task AsyncAltar(TSPlayer plr, int posX, int posY)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
-            Main.tile[posX, posY + 2].ClearEverything();
+            ClearEverything(posX, posY + 2);
             WorldGen.Place3x2(posX, posY + 2, 26, Random.Shared.Next(2));
 
         }).ContinueWith(delegate
@@ -1159,7 +1405,7 @@ internal class Commands
     #endregion
 
     #region 清理选区
-    public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY)
+    public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1168,8 +1414,29 @@ internal class Commands
             {
                 for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
                 {
-                    Main.tile[x, y].ClearEverything();
-                    WorldGen.PlaceWall(x, y, 2);
+                    if (type == 1)
+                    {
+                        // 清除方块
+                        if (Main.tile[x, y].type == Main.tile[x, y].blockType())
+                        {
+                            Main.tile[x, y].active(false);
+                            NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                        }
+                    }
+                    else if (type == 2)
+                    {
+                        WorldGen.KillWall(x, y, false); // 清除墙壁
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                    }
+                    else if (type == 3)
+                    {
+                        WorldGen.EmptyLiquid(x, y); // 清除液体
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                    }
+                    else if (type == 4)
+                    {
+                        ClearEverything(x, y); //清除所有
+                    }
                 }
             }
         }).ContinueWith(_ =>
@@ -1182,7 +1449,7 @@ internal class Commands
     #endregion
 
     #region 生成方块
-    public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID)
+    public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1191,8 +1458,20 @@ internal class Commands
             {
                 for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
                 {
-                    Main.tile[x, y].ClearEverything();
-                    WorldGen.PlaceTile(x, y, TileID);
+                    if (type == 1)
+                    {
+                        WorldGen.PlaceTile(x, y, TileID);
+                    }
+                    else if (type == 2)
+                    {
+                        ClearEverything(x, y);
+                        WorldGen.PlaceTile(x, y, TileID);
+                    }
+                    else
+                    {
+                        plr.SendErrorMessage("请指定类型: 1保留原有方块后放置,2清理所有后放置方块");
+                        return;
+                    }
                 }
             }
         }).ContinueWith(_ =>
@@ -1204,32 +1483,8 @@ internal class Commands
     }
     #endregion
 
-    #region 生成液体
-    public static Task Asynclinquid(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
-    {
-        int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(() =>
-        {
-            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
-            {
-                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
-                {
-                    Main.tile[x, y].ClearEverything();
-                    Main.tile[x, y].liquid = byte.MaxValue;
-                    Main.tile[x, y].liquidType(type);
-                }
-            }
-        }).ContinueWith(_ =>
-        {
-            TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
-            plr.SendSuccessMessage($"已生成液体，用时{value}秒。");
-        });
-    }
-    #endregion
-
     #region 生成墙壁
-    public static Task AsyncPlaceWall(TSPlayer plr, int startX, int startY, int endX, int endY, int wallID)
+    public static Task AsyncPlaceWall(TSPlayer plr, int startX, int startY, int endX, int endY, int wallID, int type)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1238,8 +1493,20 @@ internal class Commands
             {
                 for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
                 {
-                    Main.tile[x, y].ClearEverything();
-                    WorldGen.PlaceWall(x, y, wallID);
+                    if (type == 1)
+                    {
+                        WorldGen.PlaceWall(x, y, wallID);
+                    }
+                    else if (type == 2)
+                    {
+                        ClearEverything(x, y);
+                        WorldGen.PlaceWall(x, y, wallID);
+                    }
+                    else
+                    {
+                        plr.SendErrorMessage("请指定类型: 1保留原有墙壁后放置,2清理所有后放置墙壁");
+                        return;
+                    }
                 }
             }
         }).ContinueWith(_ =>
@@ -1247,6 +1514,93 @@ internal class Commands
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成墙壁，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 生成电线、虚化、制动器
+    public static Task AsyncPlaceWire(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(() =>
+        {
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    if (type == 1)
+                    {
+                        WorldGen.PlaceWire(x, y);
+                    }
+                    else if (type == 2)
+                    {
+                        WorldGen.KillWire(x, y);
+                        WorldGen.PlaceWire(x, y);
+                    }
+                    else if (type == 3)
+                    {
+                        WorldGen.KillWire(x, y);
+                        WorldGen.PlaceWire(x, y);
+                        Main.tile[x, y].inActive(true);
+                    }
+                    else if (type == 4)
+                    {
+                        WorldGen.KillWire(x, y);
+                        WorldGen.PlaceWire(x, y);
+                        WorldGen.PlaceActuator(x, y);
+                        Main.tile[x, y].inActive(true);
+                    }
+                    else
+                    {
+                        plr.SendErrorMessage("请指定电路类型: \n1.只放置电线 \n2.清理电线后放置 \n3.清电线后放置并虚化方块 \n4.清电线后放置再虚化后添加制动器");
+                        return;
+                    }
+                }
+            }
+        }).ContinueWith(_ =>
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成电路，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 生成喷漆
+    public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, int paintID, int TileOrWall)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(() =>
+        {
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    if (TileOrWall == 1)
+                    {
+                        WorldGen.paintCoatTile(x, y, (byte)paintID);
+                    }
+                    else if (TileOrWall == 2)
+                    {
+                        WorldGen.paintCoatWall(x, y, (byte)paintID);
+                    }
+                    else if (TileOrWall == 3)
+                    {
+                        WorldGen.paintCoatTile(x, y, (byte)paintID);
+                        WorldGen.paintCoatWall(x, y, (byte)paintID);
+                    }
+                    else
+                    {
+                        plr.SendErrorMessage("请指定喷涂方式: 1方块, 2墙, 3所有");
+                        return;
+                    }
+                }
+            }
+        }).ContinueWith(_ =>
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成喷漆，用时{value}秒。");
         });
     }
     #endregion
@@ -1274,20 +1628,26 @@ internal class Commands
     }
     #endregion
 
-    #region 腐化地
-    public static Task AsyncChasmRunner(TSPlayer plr, int posX, int posY)
+    #region 生成液体
+    public static Task Asynclinquid(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            Main.tile[posX, posY + 2].ClearEverything();
-            WorldGen.ChasmRunner(posX, posY + 3, Random.Shared.Next(10), true);
-
-        }).ContinueWith(delegate
+            for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            {
+                for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                {
+                    ClearEverything(x, y);
+                    Main.tile[x, y].liquid = byte.MaxValue;
+                    Main.tile[x, y].liquidType(type);
+                }
+            }
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
-            plr.SendSuccessMessage($"已生成腐化地，用时{value}秒。");
+            plr.SendSuccessMessage($"已生成液体，用时{value}秒。");
         });
     }
     #endregion

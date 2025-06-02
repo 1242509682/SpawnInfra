@@ -2,6 +2,7 @@
 using TShockAPI;
 using SpawnInfra;
 using Terraria;
+using Terraria.ID;
 
 namespace SpawnInfra;
 
@@ -25,8 +26,11 @@ internal class Configuration
     [JsonProperty("开服自动基建", Order = -10)]
     public bool Enabled { get; set; } = false;
 
-    [JsonProperty("开服指令表", Order = -1)]
+    [JsonProperty("开服指令表", Order = -2)]
     public string[] CommandList { get; set; } = new string[] { };
+
+    [JsonProperty("放置时禁止覆盖方块表", Order = -1)]
+    public HashSet<int> DisableBlock = new HashSet<int>();
 
     [JsonProperty("自建微光湖", Order = 0)]
     public List<ItemData4> SpawnShimmerBiome { get; set; } = new List<ItemData4>();
@@ -196,8 +200,10 @@ internal class Configuration
         public bool Enclose { get; set; } = false;
         [JsonProperty("左海平台产生液体(非空岛不需要开)", Order = 12)]
         public bool PlaceLiquid { get; set; } = false;
+        [JsonProperty("世界平台不覆盖地牢砖与丛林蜥蜴砖", Order = 13)]
+        public bool DisableBlock { get; set; } = true;
 
-        public ItemData2(int id, int style, int tileY, int height, int limit, int limit2, int wide, int height2, int interval)
+        public ItemData2(int id, int style, int tileY, int height, int limit, int limit2, int wide, int height2, int interval,bool disableBlock)
         {
             this.WorldPlatformID = id;
             this.WorldPlatformStyle = style;
@@ -208,6 +214,7 @@ internal class Configuration
             this.OceanPlatformWide = wide;
             this.OceanPlatformHeight = height2;
             this.OceanPlatformInterval = interval;
+            this.DisableBlock = disableBlock;
         }
     }
     #endregion
@@ -270,8 +277,10 @@ internal class Configuration
         public int defaultSpawnRate { get; set; }
         [JsonProperty("刷怪上限/个", Order = 15)]
         public int defaultMaxSpawns { get; set; }
+        [JsonProperty("直通车不覆盖地牢砖与丛林蜥蜴砖", Order = 16)]
+        public bool DisableBlock { get; set; } = true;
 
-        public ItemData3(ushort id, ushort id2, ushort platformID, int platformstyle, int tileX, int tileY, int width, int platformY, int width2, int height, int width3, int center, int deSpawn, int MaxSpawn)
+        public ItemData3(ushort id, ushort id2, ushort platformID, int platformstyle, int tileX, int tileY, int width, int platformY, int width2, int height, int width3, int center, int deSpawn, int MaxSpawn, bool disableBlock)
         {
             this.Hell_BM_TileID = id;
             this.Cord_TileID = id2;
@@ -287,6 +296,7 @@ internal class Configuration
             this.BrushMonstCenter = center;
             this.defaultSpawnRate = deSpawn;
             this.defaultMaxSpawns = MaxSpawn;
+            this.DisableBlock = disableBlock;
         }
     }
     #endregion
@@ -315,30 +325,32 @@ internal class Configuration
     #region 预设参数方法
     public void Ints()
     {
+        this.DisableBlock = new HashSet<int>{ 41, 43, 44,226, };
+
         this.Prison = new List<ItemData>
-            {
-                new ItemData(38,147,-4,10,36,80,43,27,18,13)
-            };
+        {
+            new ItemData(38,147,-4,10,36,80,43,27,18,13)
+        };
 
         this.Chests = new List<ItemData1>
-            {
-                new ItemData1(-38,34,2,18,8,0,2,21,-1,19,43,318,395)
-            };
+        {
+            new ItemData1(-38,34,2,18,8,0,2,21,-1,19,43,318,395)
+        };
 
         this.WorldPlatform = new List<ItemData2>
-            {
-                new ItemData2(19, 43, -100 ,35,150,50,270,200,30),
-            };
+        {
+            new ItemData2(19, 43, -100 ,35,150,50,270,200,30,true),
+        };
 
         this.HellTunnel = new List<ItemData3>
-            {
-                new ItemData3(38, 214, 19, 43, 0, 0,5,25,2,200,200,2,60,100),
-            };
+        { 
+            new ItemData3(38, 214, 19, 43, 0, 0,5,25,2,200,200,2,60,100,true),
+        };
 
         this.SpawnShimmerBiome = new List<ItemData4>
-            {
-                new ItemData4(0, 200),
-            };
+        {
+            new ItemData4(0, 200),
+        };
     }
     #endregion
 

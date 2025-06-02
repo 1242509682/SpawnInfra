@@ -6,6 +6,7 @@ using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
 using TShockAPI.Net;
+using static SpawnInfra.Utils;
 
 namespace SpawnInfra
 {
@@ -15,7 +16,7 @@ namespace SpawnInfra
         #region 插件信息
         public override string Name => "生成基础建设";
         public override string Author => "羽学";
-        public override Version Version => new Version(1, 5, 9);
+        public override Version Version => new Version(1, 6, 0);
         public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
         #endregion
 
@@ -299,7 +300,7 @@ namespace SpawnInfra
                 {
                     for (var x = left; x < right; x++)
                     {
-                        Main.tile[x, y + Height * 2].ClearEverything(); // 清除方块
+                        ClearEverything(x, y + Height * 2); // 清除方块
 
                         WorldGen.PlaceTile(x, top, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0); // 在清理顶部放1层（防液体流进刷怪场）
 
@@ -372,7 +373,7 @@ namespace SpawnInfra
                                 if (wallY >= middle - 10 - CenterVal && wallY <= middle - 1 && x >= CenterLeft + 1 && x <= CenterRight - 1)
                                 {
                                     // 挖空方块
-                                    Main.tile[x, wallY].ClearEverything();
+                                    ClearEverything(x, wallY);
                                 }
                                 else
                                 {
@@ -550,7 +551,7 @@ namespace SpawnInfra
                 {
                     for (int x = left; x < right; x++)
                     {
-                        Main.tile[x, y + Height * 2].ClearEverything(); // 清除方块
+                        ClearEverything(x, y + Height * 2); // 清除方块
 
                         WorldGen.PlaceTile(x, top, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0); // 在清理顶部放1层（防液体流进刷怪场）
 
@@ -637,7 +638,7 @@ namespace SpawnInfra
                 for (int j = posY - num3; j < posY; j++)
                 {
                     ITile val = Main.tile[i, j];
-                    val.ClearEverything();
+                    ClearEverything(i, j);
                     if (i > num && j < posY - 5 && i < num + num2 - 1 && j > posY - num3)
                     {
                         val.wall = wall;
@@ -690,7 +691,8 @@ namespace SpawnInfra
 
             for (int x = posX; x < posX + width * count; x++)
                 for (int y = posY - ClearHeight; y <= posY; y++)
-                    Main.tile[x, y].ClearEverything();
+                    ClearEverything(x, y);
+
 
             for (int layer = 0; layer < layers; layer++)
             {
@@ -739,7 +741,7 @@ namespace SpawnInfra
                             for (int wy = currentYPos; wy >= currentYPos - spacing; wy--)
                             {
                                 //再清一遍树
-                                Main.tile[wx, currentYPos - spacing].ClearEverything();
+                                ClearEverything(wx, currentYPos - spacing);
                                 // 铺满墙
                                 WorldGen.PlaceWall(wx, wy, Config.Chests[0].WallID, false);
                             }
@@ -867,8 +869,18 @@ namespace SpawnInfra
 
                 for (int x = left; x <= right; x++)
                 {
+                    // 禁止放置在某些方块上
+                    if (Config.WorldPlatform[0].DisableBlock)
+                    {
+                        if (Config.DisableBlock.Contains(Main.tile[x, y].type))
+                        {
+                            TSPlayer.All.SendInfoMessage($"[战斗平台] {x}, {y} 位置遇到禁止方块，已停止放置平台。");
+                            return;
+                        }
+                    }
+
                     // 清除当前位置方块
-                    Main.tile[x, y].ClearEverything();
+                    ClearEverything(x, y);
                 }
             }
 
@@ -895,8 +907,18 @@ namespace SpawnInfra
                     // 确保在平台范围内
                     if (x < left || x > right) continue;
 
+                    // 禁止放置在某些方块上
+                    if (Config.WorldPlatform[0].DisableBlock)
+                    {
+                        if (Config.DisableBlock.Contains(Main.tile[x, campfireY].type))
+                        {
+                            TSPlayer.All.SendInfoMessage($"[战斗平台] {x}, {campfireY} 位置遇到禁止方块，已停止放置篝火。");
+                            return;
+                        }
+                    }
+
                     // 清除篝火位置原有方块
-                    Main.tile[x, campfireY].ClearEverything();
+                    ClearEverything(x, campfireY);
                     // 放置篝火
                     WorldGen.PlaceTile(x, campfireY, 215, false, true, -1);
                     // 放置猫雕 
@@ -921,8 +943,15 @@ namespace SpawnInfra
                 for (int y = posY - clear; y <= posY; y++)
                 {
                     if (x < 0 || x >= Main.maxTilesX || y < 0 || y >= Main.maxTilesY) continue;
-
-                    Main.tile[x, y].ClearEverything();
+                    if (Config.WorldPlatform[0].DisableBlock)
+                    {
+                        if (Config.DisableBlock.Contains(Main.tile[x, y].type))
+                        {
+                            TSPlayer.All.SendInfoMessage($"[世界平台] {x}, {y} 位置遇到禁止方块，已停止放置平台。");
+                            return;
+                        }
+                    }
+                    ClearEverything(x, y); // 清除方块和墙壁
                 }
 
                 if (Config.WorldPlatform[0].WorldPlatformEnabled)
@@ -964,21 +993,29 @@ namespace SpawnInfra
                 {
                     Parallel.For(posY, hell, delegate (int cy)
                     {
-                        var val = Main.tile[cx, cy];
-                        val.ClearEverything();
+                        var tile = Main.tile[cx, cy];
+                        if (Config.HellTunnel[0].DisableBlock)
+                        {
+                            if (Config.DisableBlock.Contains(tile.type))
+                            {
+                                TSPlayer.All.SendInfoMessage($"[地狱直通车] {cx}, {cy} 位置遇到禁止方块，已停止放置平台。");
+                                return;
+                            }
+                        }
+                        ClearEverything(cx, cy);
                         if (cx == Xstart + Width / 2)
                         {
-                            val.type = Config.HellTunnel[0].Cord_TileID; //绳子
-                            val.active(true);
-                            val.slope(0);
-                            val.halfBrick(false);
+                            tile.type = Config.HellTunnel[0].Cord_TileID; //绳子
+                            tile.active(true);
+                            tile.slope(0);
+                            tile.halfBrick(false);
                         }
                         else if (cx == Xstart || cx == Xstart + Width - 1)
                         {
-                            val.type = Config.HellTunnel[0].Hell_BM_TileID; //边界方块
-                            val.active(true);
-                            val.slope(0);
-                            val.halfBrick(false);
+                            tile.type = Config.HellTunnel[0].Hell_BM_TileID; //边界方块
+                            tile.active(true);
+                            tile.slope(0);
+                            tile.halfBrick(false);
                         }
                     });
                 });
@@ -988,6 +1025,14 @@ namespace SpawnInfra
                 //确保平台与直通车等宽
                 for (var px = platformStart; px <= platformEnd; px++)
                 {
+                    if (Config.HellTunnel[0].DisableBlock)
+                    {
+                        if (Config.DisableBlock.Contains(Main.tile[px, posY].type))
+                        {
+                            TSPlayer.All.SendInfoMessage($"[地狱直通车] {px}, {posY} 位置遇到禁止方块，已停止放置平台。");
+                            continue;
+                        }
+                    }
                     WorldGen.PlaceTile(px, posY, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);
                     for (var cy = posY + 1; cy <= hell; cy++)
                     {
@@ -1007,7 +1052,7 @@ namespace SpawnInfra
             {
                 for (var x = 0; x < Main.maxTilesX; x++)
                 {
-                    Main.tile[x, y].ClearEverything(); // 清除方块
+                    ClearEverything(x, y); // 清除方块
 
                     if (Config.HellTunnel[0].HellPlatformEnabled)
                         WorldGen.PlaceTile(x, posY, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle); //地狱平台
