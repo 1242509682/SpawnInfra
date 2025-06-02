@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Reflection;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using TShockAPI;
@@ -369,9 +370,18 @@ internal class Commands
                         }
 
                         var Sel = plr.SelectedItem; //获取玩家手上物品
-                        if (Sel.paint < 0)
+                        byte paintID = 0;
+                        if(Sel.paint > 0)
                         {
-                            plr.SendErrorMessage("请你手持需要涂抹的喷漆");
+                            paintID = Sel.paint;
+                        }
+                        else if(Sel.paintCoating > 0)
+                        {
+                            paintID = Sel.paintCoating;
+                        }
+                        else
+                        {
+                            plr.SendErrorMessage("请你手持涂料或喷漆再使用/spi p 指令");
                             return;
                         }
 
@@ -407,7 +417,7 @@ internal class Commands
                             return;
                         }
 
-                        await AsyncPlacePaint(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.paint, type);
+                        await AsyncPlacePaint(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, paintID, type);
                     }
                     break;
 
@@ -1577,7 +1587,7 @@ internal class Commands
     #endregion
 
     #region 生成喷漆
-    public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, int paintID, int TileOrWall)
+    public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, byte paintID, int TileOrWall)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1588,16 +1598,20 @@ internal class Commands
                 {
                     if (TileOrWall == 1)
                     {
-                        WorldGen.paintCoatTile(x, y, (byte)paintID);
+                        WorldGen.paintTile(x, y, paintID);
+                        WorldGen.paintCoatTile(x, y, paintID);
                     }
                     else if (TileOrWall == 2)
                     {
-                        WorldGen.paintCoatWall(x, y, (byte)paintID);
+                        WorldGen.paintWall(x, y, paintID);
+                        WorldGen.paintCoatWall(x, y, paintID);
                     }
                     else if (TileOrWall == 3)
                     {
-                        WorldGen.paintCoatTile(x, y, (byte)paintID);
-                        WorldGen.paintCoatWall(x, y, (byte)paintID);
+                        WorldGen.paintTile(x, y, paintID);
+                        WorldGen.paintWall(x, y, paintID);
+                        WorldGen.paintCoatTile(x, y, paintID);
+                        WorldGen.paintCoatWall(x, y, paintID);
                     }
                     else
                     {
