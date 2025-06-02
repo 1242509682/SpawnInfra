@@ -525,27 +525,37 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
+                                case "0":
                                 case "水":
                                 case "water":
                                     type = 0;
                                     break;
+                                case "1":
                                 case "岩浆":
                                 case "lava":
                                     type = 1;
                                     break;
+                                case "2":
                                 case "蜂蜜":
                                 case "honey":
                                     type = 2;
                                     break;
+                                case "3":
                                 case "微光":
                                 case "shimmer":
                                     type = 3;
                                     break;
                                 default:
-                                    plr.SendErrorMessage("鱼池风格不对正确格式为:/spi 鱼池 水、岩浆、蜂蜜、微光");
+                                    plr.SendErrorMessage("正确格式为:/spi yc 0到3 (0水,1岩浆,2蜂蜜,3微光");
                                     return;
                             }
                         }
+                        else
+                        {
+                            plr.SendErrorMessage("正确格式为:/spi yc 0到3 (0水,1岩浆,2蜂蜜,3微光");
+                            return;
+                        }
+
                         await AsyncGenPond(plr, plr.TileX, plr.TileY + 3, type);
                         break;
                     }
@@ -838,8 +848,8 @@ internal class Commands
             "/spi dl —— 生成地牢",
             "/spi sm —— 生成神庙",
             "/spi wg —— 生成微光湖",
+            "/spi yc —— 生成鱼池",
             "/spi sg 70 85 —— 生成刷怪场",
-            "/spi yc 水 —— 生成鱼池(水/蜂蜜/岩浆/微光)",
             "/spi zt —— 脚下生成直通车(天顶为头上)",
             "/spi wp 清理高度 —— 以手上方块生成世界平台",
             "/spi fp 宽 高 间隔 —— 以手上方块生成战斗平台",
