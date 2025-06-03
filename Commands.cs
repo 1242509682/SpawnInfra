@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using TShockAPI;
+using TShockAPI.Modules;
 using static SpawnInfra.Plugin;
 using static SpawnInfra.Utils;
 
@@ -57,13 +58,13 @@ internal class Commands
                             plr.SendInfoMessage("\n请确保s1和s2两点不再同一位置,两点之间可形成'线'或者'方形'");
                             plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                             plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
-                            plr.SendMessage("清理区域: /spi c 1到4 (1方块/2墙/3液体/4所有)", color);
-                            plr.SendMessage("根据选区放手上方块: /spi t (1清完放置/2保留放置)", color);
-                            plr.SendMessage("根据选区放手上墙壁: /spi w (1清完放置/2保留放置)", color);
-                            plr.SendMessage("根据选区放手上喷漆: /spi p (1喷方块/2喷墙/3所有)", color);
-                            plr.SendMessage("清选区并放液体:/spi yt 1到4(水/岩浆/蜂蜜/微光)", color);
-                            plr.SendMessage("将选区方块设为半砖:/spi bz 1到4（1右斜坡,2左斜坡,3右半砖,4左半砖）", color);
-                            plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放并虚化加制动器）", color);
+                            plr.SendMessage("清理区域: /spi c 1到8 (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
+                            plr.SendMessage("根据选区放手上方块: /spi t 1到3 (1保留放置,2替换,3清完放置)", color);
+                            plr.SendMessage("根据选区放手上墙壁: /spi w 1和2 (1保留放置,2清完放置)", color);
+                            plr.SendMessage("根据选区放手上喷漆: /spi p 1到4 (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
+                            plr.SendMessage("清选区并放液体:/spi yt 1到4 (1水,2岩浆,3蜂蜜,微光)", color);
+                            plr.SendMessage("将选区方块设为半砖:/spi bz 1到5（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
+                            plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
                             break;
                         }
 
@@ -81,13 +82,13 @@ internal class Commands
                                 plr.SendInfoMessage("\n请确保s1和s2两点不再同一位置,两点之间可形成'线'或者'方形'");
                                 plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                                 plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
-                                plr.SendMessage("清理区域: /spi c 1到4 (1方块/2墙/3液体/4所有)", color);
-                                plr.SendMessage("根据选区放手上方块: /spi t 1和2 (1保留放置/2清完放置)", color);
-                                plr.SendMessage("根据选区放手上墙壁: /spi w 1和2 (1保留放置/2清完放置)", color);
-                                plr.SendMessage("根据选区放手上喷漆: /spi p 1和2 (1喷方块/2喷墙/3所有)", color);
-                                plr.SendMessage("清选区并放液体:/spi yt 1到4 (水/岩浆/蜂蜜/微光)", color);
-                                plr.SendMessage("将选区方块设为半砖:/spi bz 1到4（1右斜坡,2左斜坡,3右半砖,4左半砖）", color);
-                                plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放并虚化加制动器）", color);
+                                plr.SendMessage("清理区域: /spi c 1到8 (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
+                                plr.SendMessage("根据选区放手上方块: /spi t 1到3 (1保留放置,2替换,3清完放置)", color);
+                                plr.SendMessage("根据选区放手上墙壁: /spi w 1和2 (1保留放置,2清完放置)", color);
+                                plr.SendMessage("根据选区放手上喷漆: /spi p 1到4 (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
+                                plr.SendMessage("清选区并放液体:/spi yt 1到4 (1水,2岩浆,3蜂蜜,微光)", color);
+                                plr.SendMessage("将选区方块设为半砖:/spi bz 1到5（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
+                                plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
                                 break;
                         }
                     }
@@ -111,30 +112,14 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "1":
-                                case "t":
-                                case "方块":
-                                case "block":
-                                    type = 1;
-                                    break;
-                                case "2":
-                                case "w":
-                                case "墙":
-                                case "墙壁":
-                                case "will":
-                                    type = 2;
-                                    break;
-                                case "3":
-                                case "yt":
-                                case "液体":
-                                case "linquid":
-                                    type = 3;
-                                    break;
-                                case "4":
-                                case "all":
-                                case "所有":
-                                    type = 4;
-                                    break;
+                                case "1": case "t": case "方块": case "block": type = 1; break;
+                                case "2": case "w": case "墙": case "墙壁": case "will": type = 2; break;
+                                case "3": case "yt": case "水": case "液体": case "linquid": type = 3; break;
+                                case "4": case "p": case "paint": case "染料": type = 4; break;
+                                case "5": case "虚化": type = 5; break;
+                                case "6": case "wr": case "wire": case "电线": case "电路": type = 6; break;
+                                case "7": case "ac": case "制动器": case "actuator": type = 7; break;
+                                case "8": case "all": case "全部": type = 8; break;
                                 default:
                                     plr.SendInfoMessage("正确格式为:/spi c 1到4(1方块/2墙/3液体/4所有)");
                                     return;
@@ -169,22 +154,23 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "1":
-                                case "保留":
-                                    type = 1;
-                                    break;
-                                case "2":
-                                case "清理":
-                                    type = 2;
-                                    break;
+                                case "1": case "保留": type = 1; break;
+                                case "2": case "替换": type = 2; break;
+                                case "3": case "清理": type = 3; break;
                                 default:
-                                    plr.SendInfoMessage("正确格式为:/spi t 1和2 (1保留原有放置/2清完所有后放置)");
+                                    plr.SendInfoMessage("正确格式为:/spi t 1到3");
+                                    plr.SendMessage("1 - 保留原有放置", color);
+                                    plr.SendMessage("2 - 替换", color);
+                                    plr.SendMessage("3 - 清完所有后放置", color);
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendInfoMessage("正确格式为:/spi t 1和2 (1保留原有放置/2清完所有后放置)");
+                            plr.SendInfoMessage("正确格式为:/spi t 1到3");
+                            plr.SendMessage("1 - 保留原有放置", color);
+                            plr.SendMessage("2 - 替换后放置", color);
+                            plr.SendMessage("3 - 清完所有后放置", color);
                             return;
                         }
 
@@ -194,7 +180,7 @@ internal class Commands
                             plr.SendErrorMessage("请你手持需要放置的方块");
                             return;
                         }
-                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile, type);
+                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile, type,Sel.placeStyle);
                     }
                     break;
 
@@ -209,22 +195,11 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "1":
-                                case "右斜坡":
-                                    type = 1;
-                                    break;
-                                case "2":
-                                case "左斜坡":
-                                    type = 2;
-                                    break;
-                                case "3":
-                                case "右半砖":
-                                    type = 3;
-                                    break;
-                                case "4":
-                                case "左半砖":
-                                    type = 4;
-                                    break;
+                                case "1": case "右斜坡": type = 1; break;
+                                case "2": case "左斜坡": type = 2; break;
+                                case "3": case "右半砖": type = 3; break;
+                                case "4": case "左半砖": type = 4; break;
+                                case "5": case "全砖": type = 5; break;
                                 default:
                                     plr.SendInfoMessage("正确格式为:/spi bz 1到4");
                                     plr.SendMessage("1 - 右斜坡", color);
@@ -268,14 +243,8 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "1":
-                                case "保留":
-                                    type = 1;
-                                    break;
-                                case "2":
-                                case "清理":
-                                    type = 2;
-                                    break;
+                                case "1": case "保留": type = 1; break;
+                                case "2": case "清理": type = 2; break;
                                 default:
                                     plr.SendInfoMessage("正确格式为:/spi w 1和2 (1保留原有放置/2清完所有后放置)");
                                     return;
@@ -317,28 +286,16 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "1":
-                                case "保留":
-                                    type = 1;
-                                    break;
-                                case "2":
-                                case "清理":
-                                    type = 2;
-                                    break;
-                                case "3":
-                                case "虚化":
-                                    type = 3;
-                                    break;
-                                case "4":
-                                case "制动器":
-                                    type = 4;
-                                    break;
+                                case "1": case "保留": type = 1; break;
+                                case "2": case "清理": type = 2; break;
+                                case "3": case "虚化": type = 3; break;
+                                case "4": case "制动器": type = 4; break;
                                 default:
                                     plr.SendErrorMessage("正确格式为:/spi ct 1到4");
                                     plr.SendInfoMessage("1 - 保留原有电线后放置");
                                     plr.SendInfoMessage("2 - 清完电线后所有后放置)");
                                     plr.SendInfoMessage("3 - 清电线后放置并虚化方块)");
-                                    plr.SendInfoMessage("4 - 清电线后放置再虚化后添加制动器)");
+                                    plr.SendInfoMessage("4 - 清电线后放置再添加制动器)");
                                     return;
                             }
                         }
@@ -348,7 +305,7 @@ internal class Commands
                             plr.SendInfoMessage("1 - 保留原有电线后放置");
                             plr.SendInfoMessage("2 - 清完电线后所有后放置)");
                             plr.SendInfoMessage("3 - 清电线后放置并虚化方块)");
-                            plr.SendInfoMessage("4 - 清电线后放置再虚化后添加制动器)");
+                            plr.SendInfoMessage("4 - 清电线后放置再添加制动器)");
                             return;
                         }
 
@@ -371,11 +328,11 @@ internal class Commands
 
                         var Sel = plr.SelectedItem; //获取玩家手上物品
                         byte paintID = 0;
-                        if(Sel.paint > 0)
+                        if (Sel.paint > 0)
                         {
                             paintID = Sel.paint;
                         }
-                        else if(Sel.paintCoating > 0)
+                        else if (Sel.paintCoating > 0)
                         {
                             paintID = Sel.paintCoating;
                         }
@@ -390,30 +347,26 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "1":
-                                case "方块":
-                                case "block":
-                                    type = 1;
-                                    break;
-                                case "2":
-                                case "墙":
-                                case "墙壁":
-                                case "wall":
-                                    type = 2;
-                                    break;
-                                case "3":
-                                case "所有":
-                                case "all":
-                                    type = 3;
-                                    break;
+                                case "1": case "方块": case "block": type = 1; break;
+                                case "2": case "墙": case "墙壁": case "wall": type = 2; break;
+                                case "3": case "所有": case "all": type = 3; break;
+                                case "4": case "虚化": type = 4; break;
                                 default:
-                                    plr.SendInfoMessage("正确格式为:/spi p 1到3(1方块/2墙壁/3所有)");
+                                    plr.SendInfoMessage("正确格式为:/spi p 1到4 (1方块/2墙壁/3所有/4虚化切换)");
+                                    plr.SendMessage("1 - 只喷方块", color);
+                                    plr.SendMessage("2 - 只喷墙壁", color);
+                                    plr.SendMessage("3 - 喷所有方块和墙壁", color);
+                                    plr.SendMessage("4 - 切换方块虚化状态", color);
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendInfoMessage("正确格式为:/spi p 1到3(1方块/2墙壁/3所有)");
+                            plr.SendInfoMessage("正确格式为:/spi p 1到4 (1方块/2墙壁/3所有/4虚化切换)");
+                            plr.SendMessage("1 - 只喷方块", color);
+                            plr.SendMessage("2 - 只喷墙壁", color);
+                            plr.SendMessage("3 - 喷所有方块和墙壁", color);
+                            plr.SendMessage("4 - 切换方块虚化状态", color);
                             return;
                         }
 
@@ -439,26 +392,10 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "1":
-                                case "水":
-                                case "water":
-                                    type = 0;
-                                    break;
-                                case "2":
-                                case "岩浆":
-                                case "lava":
-                                    type = 1;
-                                    break;
-                                case "3":
-                                case "蜂蜜":
-                                case "honey":
-                                    type = 2;
-                                    break;
-                                case "4":
-                                case "微光":
-                                case "shimmer":
-                                    type = 3;
-                                    break;
+                                case "1": case "水": case "water": type = 0; break;
+                                case "2": case "岩浆": case "lava": type = 1; break;
+                                case "3": case "蜂蜜": case "honey": type = 2; break;
+                                case "4": case "微光": case "shimmer": type = 3; break;
                                 default:
                                     plr.SendInfoMessage("正确格式为:/spi yt 1到4(水/岩浆/蜂蜜/微光)");
                                     return;
@@ -535,34 +472,18 @@ internal class Commands
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
                             {
-                                case "0":
-                                case "水":
-                                case "water":
-                                    type = 0;
-                                    break;
-                                case "1":
-                                case "岩浆":
-                                case "lava":
-                                    type = 1;
-                                    break;
-                                case "2":
-                                case "蜂蜜":
-                                case "honey":
-                                    type = 2;
-                                    break;
-                                case "3":
-                                case "微光":
-                                case "shimmer":
-                                    type = 3;
-                                    break;
+                                case "1": case "水": case "water": type = 0; break;
+                                case "2": case "岩浆": case "lava": type = 1; break;
+                                case "3": case "蜂蜜": case "honey": type = 2; break;
+                                case "4": case "微光": case "shimmer": type = 3; break;
                                 default:
-                                    plr.SendErrorMessage("正确格式为:/spi yc 0到3 (0水,1岩浆,2蜂蜜,3微光");
+                                    plr.SendErrorMessage("正确格式为:/spi yc 1到4 (1水,2岩浆,3蜂蜜,4微光");
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendErrorMessage("正确格式为:/spi yc 0到3 (0水,1岩浆,2蜂蜜,3微光");
+                            plr.SendErrorMessage("正确格式为:/spi yc 1到4 (1水,2岩浆,3蜂蜜,4微光");
                             return;
                         }
 
@@ -682,9 +603,7 @@ internal class Commands
                     {
                         if (NeedInGame()) return;
 
-                        int w;
-                        int h;
-                        int i;
+                        int w; int h; int i;
 
                         if (args.Parameters.Count < 4)
                         {
@@ -1198,6 +1117,12 @@ internal class Commands
                 }
                 else //不在中心 左右生成半砖推怪平台
                 {
+                    if (Config.DisableBlock.Contains(Main.tile[x, middle - 1].type))
+                    {
+                        TSPlayer.All.SendInfoMessage($"[刷怪场] {x}, {middle - 1} 位置遇到禁止方块，已停止放置。");
+                        return;
+                    }
+
                     Main.tile[x, middle - 1].type = Config.HellTunnel[0].Hell_BM_TileID;
                     Main.tile[x, middle - 1].active(true);
                     Main.tile[x, middle - 1].halfBrick(false);
@@ -1238,6 +1163,15 @@ internal class Commands
         // 左右各放一列把刷怪场封闭起来
         for (int y2 = top; y2 <= bottom; y2++)
         {
+            var leftTile = Main.tile[left - 1, y2];
+            var rightTile = Main.tile[right, y2];
+            if (Config.DisableBlock.Contains(leftTile.type) || Config.DisableBlock.Contains(rightTile.type))
+            {
+                int stopX = Config.DisableBlock.Contains(leftTile.type) ? left - 1 : right;
+                TSPlayer.All.SendInfoMessage($"[刷怪场] {stopX}, {y2} 位置遇到禁止方块，已停止放置。");
+                return;
+            }
+
             WorldGen.PlaceTile(left - 1, y2, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
             WorldGen.PlaceTile(right, y2, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
         }
@@ -1428,6 +1362,7 @@ internal class Commands
     public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
         int secondLast = Utils.GetUnixTimestamp;
+       
         return Task.Run(() =>
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1436,12 +1371,8 @@ internal class Commands
                 {
                     if (type == 1)
                     {
-                        // 清除方块
-                        if (Main.tile[x, y].type == Main.tile[x, y].blockType())
-                        {
-                            Main.tile[x, y].active(false);
-                            NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
-                        }
+                        Main.tile[x, y].Clear(Terraria.DataStructures.TileDataType.Tile); //清理方块
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
                     }
                     else if (type == 2)
                     {
@@ -1455,7 +1386,34 @@ internal class Commands
                     }
                     else if (type == 4)
                     {
+                        Main.tile[x, y].ClearBlockPaintAndCoating(); // 清除方块的涂装和涂层
+                        Main.tile[x, y].ClearWallPaintAndCoating(); // 清除墙壁的涂装和涂层
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                    }
+                    else if (type == 5)
+                    {
+                        Main.tile[x, y].inActive(true); //清除虚化
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                    }
+                    else if (type == 6)
+                    {
+                        WorldGen.KillWire(x, y); //清除电线
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                    }
+                    else if (type == 7)
+                    {
+                        WorldGen.KillActuator(x, y); //清除制动器
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                    }
+                    else if (type == 8)
+                    {
                         ClearEverything(x, y); //清除所有
+                        NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
+                    }
+                    else
+                    {
+                        plr.SendInfoMessage("请指定清理类型: \n1.清除方块 \n2.清除墙壁 \n3.清除液体 \n4.清除涂装和涂层 \n5.清除虚化 \n6.清除电线 \n7.清除制动器 \n8.清除所有");
+                        return;
                     }
                 }
             }
@@ -1469,7 +1427,7 @@ internal class Commands
     #endregion
 
     #region 生成方块
-    public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type)
+    public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type,int sy)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1484,12 +1442,19 @@ internal class Commands
                     }
                     else if (type == 2)
                     {
-                        ClearEverything(x, y);
+                        WorldGen.ReplaceTile(x, y, (ushort)TileID, sy);
+                    }
+                    else if (type == 3)
+                    {
+                        Main.tile[x, y].Clear(Terraria.DataStructures.TileDataType.Tile); //清理方块
                         WorldGen.PlaceTile(x, y, TileID);
                     }
                     else
                     {
-                        plr.SendErrorMessage("请指定类型: 1保留原有方块后放置,2清理所有后放置方块");
+                        plr.SendErrorMessage("正确格式为:/spi t 1到3");
+                        plr.SendInfoMessage("1 - 保留原有放置");
+                        plr.SendInfoMessage("2 - 替换方块(会保留半砖属性)");
+                        plr.SendInfoMessage("3 - 清完所有后放置");
                         return;
                     }
                 }
@@ -1519,12 +1484,13 @@ internal class Commands
                     }
                     else if (type == 2)
                     {
-                        ClearEverything(x, y);
+                        WorldGen.KillWall(x, y, false); // 清除墙壁
                         WorldGen.PlaceWall(x, y, wallID);
+
                     }
                     else
                     {
-                        plr.SendErrorMessage("请指定类型: 1保留原有墙壁后放置,2清理所有后放置墙壁");
+                        plr.SendInfoMessage("请指定类型: 1保留原有墙壁后放置,2清理原有墙壁后放置");
                         return;
                     }
                 }
@@ -1568,11 +1534,10 @@ internal class Commands
                         WorldGen.KillWire(x, y);
                         WorldGen.PlaceWire(x, y);
                         WorldGen.PlaceActuator(x, y);
-                        Main.tile[x, y].inActive(true);
                     }
                     else
                     {
-                        plr.SendErrorMessage("请指定电路类型: \n1.只放置电线 \n2.清理电线后放置 \n3.清电线后放置并虚化方块 \n4.清电线后放置再虚化后添加制动器");
+                        plr.SendInfoMessage("请指定电路类型: \n1.只放置电线 \n2.清理电线后放置 \n3.清电线后放置并虚化方块 \n4.清电线后放置再添加制动器");
                         return;
                     }
                 }
@@ -1613,9 +1578,14 @@ internal class Commands
                         WorldGen.paintCoatTile(x, y, paintID);
                         WorldGen.paintCoatWall(x, y, paintID);
                     }
+                    else if (TileOrWall == 4)
+                    {
+                        bool Inactive = Main.tile[x, y].inActive();
+                        Main.tile[x, y].inActive(!Inactive);
+                    }
                     else
                     {
-                        plr.SendErrorMessage("请指定喷涂方式: 1方块, 2墙, 3所有");
+                        plr.SendErrorMessage("请指定喷涂方式: 1喷方块, 2喷墙, 3喷所有, 4方块虚化");
                         return;
                     }
                 }
@@ -1639,7 +1609,10 @@ internal class Commands
             {
                 for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
                 {
-                    WorldGen.SlopeTile(x, y, SlopeID);
+                    if (SlopeID != 5)
+                        WorldGen.SlopeTile(x, y, SlopeID);
+                    else
+                        Main.tile[x, y].Clear(Terraria.DataStructures.TileDataType.Slope);
                 }
             }
 

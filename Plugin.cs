@@ -16,7 +16,7 @@ namespace SpawnInfra
         #region 插件信息
         public override string Name => "生成基础建设";
         public override string Author => "羽学";
-        public override Version Version => new Version(1, 6, 0);
+        public override Version Version => new Version(1, 6, 1);
         public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
         #endregion
 
@@ -893,6 +893,16 @@ namespace SpawnInfra
                 // 在水平范围内生成平台
                 for (int x = left; x <= right; x++)
                 {
+                    // 禁止放置在某些方块上
+                    if (Config.WorldPlatform[0].DisableBlock)
+                    {
+                        if (Config.DisableBlock.Contains(Main.tile[x, y].type))
+                        {
+                            TSPlayer.All.SendInfoMessage($"[战斗平台] {x}, {y} 位置遇到禁止方块，已停止放置平台。");
+                            return;
+                        }
+                    }
+
                     // 放置平台
                     WorldGen.PlaceTile(x, y, type, false, true, -1);
                 }
