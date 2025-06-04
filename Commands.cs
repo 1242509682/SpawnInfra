@@ -180,7 +180,7 @@ internal class Commands
                             plr.SendErrorMessage("请你手持需要放置的方块");
                             return;
                         }
-                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile, type,Sel.placeStyle);
+                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile, type, Sel.placeStyle);
                     }
                     break;
 
@@ -328,13 +328,16 @@ internal class Commands
 
                         var Sel = plr.SelectedItem; //获取玩家手上物品
                         byte paintID = 0;
+                        bool hasPaint = false;
                         if (Sel.paint > 0)
                         {
                             paintID = Sel.paint;
+                            hasPaint = true;
                         }
                         else if (Sel.paintCoating > 0)
                         {
                             paintID = Sel.paintCoating;
+                            hasPaint = false;
                         }
                         else
                         {
@@ -370,7 +373,7 @@ internal class Commands
                             return;
                         }
 
-                        await AsyncPlacePaint(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, paintID, type);
+                        await AsyncPlacePaint(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, paintID, type, hasPaint);
                     }
                     break;
 
@@ -1362,7 +1365,7 @@ internal class Commands
     public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
         int secondLast = Utils.GetUnixTimestamp;
-       
+
         return Task.Run(() =>
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1427,7 +1430,7 @@ internal class Commands
     #endregion
 
     #region 生成方块
-    public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type,int sy)
+    public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type, int sy)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1552,7 +1555,7 @@ internal class Commands
     #endregion
 
     #region 生成喷漆
-    public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, byte paintID, int TileOrWall)
+    public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, byte paintID, int TileOrWall, bool hasPaint)
     {
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1561,32 +1564,48 @@ internal class Commands
             {
                 for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
                 {
-                    if (TileOrWall == 1)
+                    if (TileOrWall == 4)
                     {
-                        WorldGen.paintTile(x, y, paintID);
-                        WorldGen.paintCoatTile(x, y, paintID);
-                    }
-                    else if (TileOrWall == 2)
-                    {
-                        WorldGen.paintWall(x, y, paintID);
-                        WorldGen.paintCoatWall(x, y, paintID);
-                    }
-                    else if (TileOrWall == 3)
-                    {
-                        WorldGen.paintTile(x, y, paintID);
-                        WorldGen.paintWall(x, y, paintID);
-                        WorldGen.paintCoatTile(x, y, paintID);
-                        WorldGen.paintCoatWall(x, y, paintID);
-                    }
-                    else if (TileOrWall == 4)
-                    {
+                        // 虚化切换单独处理
                         bool Inactive = Main.tile[x, y].inActive();
                         Main.tile[x, y].inActive(!Inactive);
+                        continue;
+                    }
+
+                    // 根据物品类型决定使用 paint 还是 coating
+                    if (hasPaint)
+                    {
+                        // 使用的是 paint（喷漆）
+                        if (TileOrWall == 1 || TileOrWall == 3)
+                        {
+                            Main.tile[x, y].Clear(Terraria.DataStructures.TileDataType.TilePaint);
+                            WorldGen.paintTile(x, y, paintID);
+                        }
+                        if (TileOrWall == 2 || TileOrWall == 3)
+                        {
+                            Main.tile[x, y].Clear(Terraria.DataStructures.TileDataType.WallPaint);
+                            WorldGen.paintWall(x, y, paintID);
+                        }
                     }
                     else
                     {
-                        plr.SendErrorMessage("请指定喷涂方式: 1喷方块, 2喷墙, 3喷所有, 4方块虚化");
-                        return;
+                        // 使用的是 paintCoating（涂层）
+                        if (paintID > 2)
+                        {
+                            plr.SendErrorMessage("涂层仅支持 ID 为 1 或 2 的涂料！");
+                            return;
+                        }
+
+                        if (TileOrWall == 1 || TileOrWall == 3)
+                        {
+                            Main.tile[x, y].Clear(Terraria.DataStructures.TileDataType.TilePaint);
+                            WorldGen.paintCoatTile(x, y, paintID);
+                        }
+                        if (TileOrWall == 2 || TileOrWall == 3)
+                        {
+                            Main.tile[x, y].Clear(Terraria.DataStructures.TileDataType.WallPaint);
+                            WorldGen.paintCoatWall(x, y, paintID);
+                        }
                     }
                 }
             }
