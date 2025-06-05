@@ -17,9 +17,9 @@ internal class Commands
 
         //随机颜色
         Random rand = new Random();
-        int r = rand.Next(150, 256);
-        int g = rand.Next(150, 256);
-        int b = rand.Next(150, 256);
+        int r = rand.Next(150, 200);
+        int g = rand.Next(170, 200);
+        int b = rand.Next(150, 200);
         var color = new Color(r, g, b);
 
         if (args.Parameters.Count == 0)
@@ -58,13 +58,16 @@ internal class Commands
                             plr.SendInfoMessage("\n请确保s1和s2两点不再同一位置,两点之间可形成'线'或者'方形'");
                             plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                             plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
-                            plr.SendMessage("清理区域: /spi c 1到8 (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
-                            plr.SendMessage("根据选区放手上方块: /spi t 1到3 (1保留放置,2替换,3清完放置)", color);
-                            plr.SendMessage("根据选区放手上墙壁: /spi w 1和2 (1保留放置,2清完放置)", color);
-                            plr.SendMessage("根据选区放手上喷漆: /spi p 1到4 (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
-                            plr.SendMessage("清选区并放液体:/spi yt 1到4 (1水,2岩浆,3蜂蜜,微光)", color);
-                            plr.SendMessage("将选区方块设为半砖:/spi bz 1到5（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
-                            plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
+                            plr.SendMessage("[c/F8F5B8:清理]区域: [c/AEEBE9:/spi c 1到8] (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
+                            plr.SendMessage("根据选区放[c/F8F5B8:手上方块]: [c/AEEBE9:/spi t 1到3] (1保留放置,2替换,3清完放置)", color);
+                            plr.SendMessage("根据选区放[c/F8F5B8:手上墙壁]: [c/AEEBE9:/spi w 1和2] (1保留放置,2清完放置)", color);
+                            plr.SendMessage("根据选区放[c/F8F5B8:手上喷漆]: [c/AEEBE9:/spi p 1到4] (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
+                            plr.SendMessage("清选区并[c/F8F5B8:放液体]:[c/AEEBE9:/spi yt 1到4] (1水,2岩浆,3蜂蜜,微光)", color);
+                            plr.SendMessage("将选区方块[c/F8F5B8:设为半砖]:[c/AEEBE9:/spi bz 1到5]（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
+                            plr.SendMessage("为选区方块[c/F8F5B8:添加电路]:[c/AEEBE9:/spi wr 1到4]（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
+                            plr.SendMessage("*将选区[c/F8F5B8:还原上次]修改的图格:[c/AEEBE9:/spi bk]", color);
+                            plr.SendMessage("*为选区[c/F8F5B8:复制]当前的图格:[c/AEEBE9:/spi cp]", color);
+                            plr.SendMessage("*在头顶位置[c/F8F5B8:粘贴]图格:[c/AEEBE9:/spi pt]", color);
                             break;
                         }
 
@@ -82,15 +85,70 @@ internal class Commands
                                 plr.SendInfoMessage("\n请确保s1和s2两点不再同一位置,两点之间可形成'线'或者'方形'");
                                 plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                                 plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
-                                plr.SendMessage("清理区域: /spi c 1到8 (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
-                                plr.SendMessage("根据选区放手上方块: /spi t 1到3 (1保留放置,2替换,3清完放置)", color);
-                                plr.SendMessage("根据选区放手上墙壁: /spi w 1和2 (1保留放置,2清完放置)", color);
-                                plr.SendMessage("根据选区放手上喷漆: /spi p 1到4 (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
-                                plr.SendMessage("清选区并放液体:/spi yt 1到4 (1水,2岩浆,3蜂蜜,微光)", color);
-                                plr.SendMessage("将选区方块设为半砖:/spi bz 1到5（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
-                                plr.SendMessage("为选区方块添加电路:/spi wr 1到4（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
+                                plr.SendMessage("[c/F8F5B8:清理]区域: [c/AEEBE9:/spi c 1到8] (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
+                                plr.SendMessage("根据选区放[c/F8F5B8:手上方块]: [c/AEEBE9:/spi t 1到3] (1保留放置,2替换,3清完放置)", color);
+                                plr.SendMessage("根据选区放[c/F8F5B8:手上墙壁]: [c/AEEBE9:/spi w 1和2] (1保留放置,2清完放置)", color);
+                                plr.SendMessage("根据选区放[c/F8F5B8:手上喷漆]: [c/AEEBE9:/spi p 1到4] (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
+                                plr.SendMessage("清选区并[c/F8F5B8:放液体]:[c/AEEBE9:/spi yt 1到4] (1水,2岩浆,3蜂蜜,微光)", color);
+                                plr.SendMessage("将选区方块[c/F8F5B8:设为半砖]:[c/AEEBE9:/spi bz 1到5]（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
+                                plr.SendMessage("为选区方块[c/F8F5B8:添加电路]:[c/AEEBE9:/spi wr 1到4]（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
+                                plr.SendMessage("*将选区[c/F8F5B8:还原上次]修改的图格:[c/AEEBE9:/spi bk]", color);
+                                plr.SendMessage("*为选区[c/F8F5B8:复制]当前的图格:[c/AEEBE9:/spi cp]", color);
+                                plr.SendMessage("*在头顶位置[c/F8F5B8:粘贴]图格:[c/AEEBE9:/spi pt]", color);
                                 break;
                         }
+                    }
+                    break;
+
+                case "cp":
+                case "copy":
+                case "复制":
+                    {
+                        if (NeedInGame()) return;
+                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                        {
+                            plr.SendInfoMessage("您还没有选择区域！");
+                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                            return;
+                        }
+
+                        // 保存到剪贴板
+                        var clipboard = CreateClipboardData(
+                            plr.TempPoints[0].X, plr.TempPoints[0].Y,
+                            plr.TempPoints[1].X, plr.TempPoints[1].Y);
+
+                        PlayerClipboards[plr.Name] = clipboard;
+                        plr.SendSuccessMessage($"已复制区域 ({clipboard.Width}x{clipboard.Height})");
+                    }
+                    break;
+
+                case "pt":
+                case "粘贴":
+                case "paste":
+                    {
+                        if (NeedInGame()) return;
+                        if (!PlayerClipboards.TryGetValue(plr.Name, out var clipboard))
+                        {
+                            plr.SendErrorMessage("剪贴板为空！请先使用/spi copy复制一个区域。");
+                            return;
+                        }
+
+                        // 计算粘贴位置（玩家当前位置为头顶）
+                        int pasteX = plr.TileX - clipboard.Width / 2;
+                        int pasteY = plr.TileY - clipboard.Height;
+
+                        await AsyncPaste(plr, pasteX, pasteY, clipboard);
+                    }
+                    break;
+
+                case "bk":
+                case "back":
+                case "还原":
+                    {
+                        if (NeedInGame()) return;
+
+                        await AsyncBack(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y);
                     }
                     break;
 
@@ -378,6 +436,7 @@ internal class Commands
                     break;
 
                 case "yt":
+                case "水":
                 case "液体":
                 case "linquid":
                     {
@@ -1028,7 +1087,7 @@ internal class Commands
     #region 刷怪场2
     public static void RockTrialField2(int posY, int posX, int Height, int Width, int Center)
     {
-        // 直接使用 y 作为基准点
+        // 直接使用 startY 作为基准点
         var top = posY - Height;   // 顶部位置
         var bottom = posY + Height; // 底部位置
         var middle = (top + bottom) / 2 + Center; // 中心位置
@@ -1364,6 +1423,7 @@ internal class Commands
     #region 清理选区
     public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
+        CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
 
         return Task.Run(() =>
@@ -1432,6 +1492,7 @@ internal class Commands
     #region 生成方块
     public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type, int sy)
     {
+        CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
         {
@@ -1474,6 +1535,7 @@ internal class Commands
     #region 生成墙壁
     public static Task AsyncPlaceWall(TSPlayer plr, int startX, int startY, int endX, int endY, int wallID, int type)
     {
+        CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
         {
@@ -1510,6 +1572,7 @@ internal class Commands
     #region 生成电线、虚化、制动器
     public static Task AsyncPlaceWire(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
+        CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
         {
@@ -1557,6 +1620,7 @@ internal class Commands
     #region 生成喷漆
     public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, byte paintID, int TileOrWall, bool hasPaint)
     {
+        CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
         {
@@ -1621,6 +1685,7 @@ internal class Commands
     #region 设为半砖
     public static Task AsyncSetSlope(TSPlayer plr, int startX, int startY, int endX, int endY, int SlopeID)
     {
+        CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
@@ -1647,6 +1712,7 @@ internal class Commands
     #region 生成液体
     public static Task Asynclinquid(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
+        CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
         {
@@ -1668,4 +1734,136 @@ internal class Commands
     }
     #endregion
 
+    #region 还原选区指令方法
+    private static readonly Dictionary<string, Stack<Dictionary<Point, Tile>>> PlayerSnapshots = new Dictionary<string, Stack<Dictionary<Point, Tile>>>();
+    public static Task AsyncBack(TSPlayer plr, int startX, int startY, int endX, int endY)
+    {
+        int secondLast = Utils.GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            RestoreArea(plr);
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+
+            if (PlayerSnapshots[plr.Name] != null)
+            {
+                plr.SendSuccessMessage($"已将选区还原，用时{value}秒。");
+            }
+        });
+    }
+    #endregion
+
+    #region 缓存选区原始图格方法
+    private static void CacheArea(TSPlayer plr, int startX, int startY, int endX, int endY)
+    {
+        var snapshot = new Dictionary<Point, Tile>();
+
+        for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
+            for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
+                snapshot[new Point(x, y)] = (Tile)Main.tile[x, y].Clone();
+
+        if (!PlayerSnapshots.TryGetValue(plr.Name, out var stack))
+        {
+            stack = new Stack<Dictionary<Point, Tile>>();
+            PlayerSnapshots[plr.Name] = stack;
+        }
+
+        stack.Push(snapshot);
+    }
+    #endregion
+
+    #region 还原图格方法
+    private static void RestoreArea(TSPlayer plr)
+    {
+        if (!PlayerSnapshots.TryGetValue(plr.Name, out var stack) || stack.Count == 0)
+        {
+            plr.SendErrorMessage("没有可还原的图格");
+            return;
+        }
+
+        var snapshot = stack.Pop();
+
+        Task.Factory.StartNew(() =>
+        {
+            foreach (var t in snapshot)
+            {
+                var pos = t.Key;
+                var orig = t.Value;
+
+                Main.tile[pos.X, pos.Y].CopyFrom(orig);
+                TSPlayer.All.SendTileSquareCentered(pos.X, pos.Y, 1);
+            }
+        });
+    }
+    #endregion
+
+    #region 创建剪贴板数据
+    private static readonly Dictionary<string, ClipboardData> PlayerClipboards = new Dictionary<string, ClipboardData>();
+    private static ClipboardData CreateClipboardData(int startX, int startY, int endX, int endY)
+    {
+        int minX = Math.Min(startX, endX);
+        int maxX = Math.Max(startX, endX);
+        int minY = Math.Min(startY, endY);
+        int maxY = Math.Max(startY, endY);
+
+        int width = maxX - minX + 1;
+        int height = maxY - minY + 1;
+
+        Tile[,] tiles = new Tile[width, height];
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int y = minY; y <= maxY; y++)
+            {
+                int indexX = x - minX;
+                int indexY = y - minY;
+                tiles[indexX, indexY] = (Tile)Main.tile[x, y].Clone();
+            }
+        }
+
+        return new ClipboardData
+        {
+            Width = width,
+            Height = height,
+            Tiles = tiles,
+            Origin = new Point(minX, minY)
+        };
+    }
+    #endregion
+
+    #region 异步粘贴实现
+    public static Task AsyncPaste(TSPlayer plr, int pasteX, int pasteY, ClipboardData clipboard)
+    {
+        //缓存 方便粘贴错了还原
+        CacheArea(plr, pasteX, pasteY, pasteX + clipboard.Width - 1, pasteY + clipboard.Height - 1);
+        int secondLast = Utils.GetUnixTimestamp;
+
+        return Task.Run(() =>
+        {
+            for (int x = 0; x < clipboard.Width; x++)
+            {
+                for (int y = 0; y < clipboard.Height; y++)
+                {
+                    int worldX = pasteX + x;
+                    int worldY = pasteY + y;
+
+                    // 边界检查
+                    if (worldX < 0 || worldX >= Main.maxTilesX ||
+                        worldY < 0 || worldY >= Main.maxTilesY) continue;
+
+                    // 完全复制图格数据
+                    Main.tile[worldX, worldY] = (Tile)clipboard.Tiles[x, y].Clone();
+                }
+            }
+        }).ContinueWith(_ =>
+        {
+            TileHelper.GenAfter();
+            int value = Utils.GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已粘贴区域 ({clipboard.Width}x{clipboard.Height})，用时{value}秒。");
+        });
+    }
+    #endregion
 }
