@@ -1,3 +1,4 @@
 copy bin\Release\net6.0\SpawnInfra.dll C:\Users\羽学\Desktop\TShock\ServerPlugins
 del C:\Users\羽学\Desktop\TShock\tshock\生成基础建设.json
+del C:\Users\羽学\Desktop\TShock\tshock\SPIData\*
 taskkill /F /IM TShock.Server.exe

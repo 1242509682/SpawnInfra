@@ -113,12 +113,18 @@ internal class Commands
                             return;
                         }
 
+                        string name = plr.Name; // 默认使用玩家自己的名字
+                        if (args.Parameters.Count >= 2 && !string.IsNullOrWhiteSpace(args.Parameters[1]))
+                        {
+                            name = args.Parameters[1]; // 使用指定的名字
+                        }
+
                         // 保存到剪贴板
                         var clipboard = CreateClipboardData(
                             plr.TempPoints[0].X, plr.TempPoints[0].Y,
                             plr.TempPoints[1].X, plr.TempPoints[1].Y);
 
-                        PlayerClipboards[plr.Name] = clipboard;
+                        Map.SaveClip(name, clipboard);
                         plr.SendSuccessMessage($"已复制区域 ({clipboard.Width}x{clipboard.Height})");
                     }
                     break;
@@ -128,9 +134,17 @@ internal class Commands
                 case "paste":
                     {
                         if (NeedInGame()) return;
-                        if (!PlayerClipboards.TryGetValue(plr.Name, out var clipboard))
+
+                        string name = plr.Name; // 默认使用玩家自己的名字
+                        if (args.Parameters.Count >= 2 && !string.IsNullOrWhiteSpace(args.Parameters[1]))
                         {
-                            plr.SendErrorMessage("剪贴板为空！请先使用/spi copy复制一个区域。");
+                            name = args.Parameters[1]; // 使用指定的名字
+                        }
+
+                        var clipboard = Map.LoadClip(name);
+                        if (clipboard == null)
+                        {
+                            plr.SendErrorMessage("剪贴板为空！");
                             return;
                         }
 
@@ -1735,7 +1749,6 @@ internal class Commands
     #endregion
 
     #region 还原选区指令方法
-    private static readonly Dictionary<string, Stack<Dictionary<Point, Tile>>> PlayerSnapshots = new Dictionary<string, Stack<Dictionary<Point, Tile>>>();
     public static Task AsyncBack(TSPlayer plr, int startX, int startY, int endX, int endY)
     {
         int secondLast = Utils.GetUnixTimestamp;
@@ -1747,11 +1760,7 @@ internal class Commands
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
-
-            if (PlayerSnapshots[plr.Name] != null)
-            {
-                plr.SendSuccessMessage($"已将选区还原，用时{value}秒。");
-            }
+            plr.SendSuccessMessage($"已将选区还原，用时{value}秒。");
         });
     }
     #endregion
@@ -1759,32 +1768,30 @@ internal class Commands
     #region 缓存选区原始图格方法
     private static void CacheArea(TSPlayer plr, int startX, int startY, int endX, int endY)
     {
-        var snapshot = new Dictionary<Point, Tile>();
+        var snapshot = new Dictionary<Point, Terraria.Tile>();
 
         for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
             for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
-                snapshot[new Point(x, y)] = (Tile)Main.tile[x, y].Clone();
+                snapshot[new Point(x, y)] = (Terraria.Tile)Main.tile[x, y].Clone();
 
-        if (!PlayerSnapshots.TryGetValue(plr.Name, out var stack))
-        {
-            stack = new Stack<Dictionary<Point, Tile>>();
-            PlayerSnapshots[plr.Name] = stack;
-        }
-
+        var stack = Map.LoadBack(plr.Name);
         stack.Push(snapshot);
+        Map.SaveBack(plr.Name, stack);
     }
     #endregion
 
     #region 还原图格方法
     private static void RestoreArea(TSPlayer plr)
     {
-        if (!PlayerSnapshots.TryGetValue(plr.Name, out var stack) || stack.Count == 0)
+        var stack = Map.LoadBack(plr.Name);
+        if (stack.Count == 0)
         {
             plr.SendErrorMessage("没有可还原的图格");
             return;
         }
 
         var snapshot = stack.Pop();
+        Map.SaveBack(plr.Name, stack);
 
         Task.Factory.StartNew(() =>
         {
@@ -1801,7 +1808,6 @@ internal class Commands
     #endregion
 
     #region 创建剪贴板数据
-    private static readonly Dictionary<string, ClipboardData> PlayerClipboards = new Dictionary<string, ClipboardData>();
     private static ClipboardData CreateClipboardData(int startX, int startY, int endX, int endY)
     {
         int minX = Math.Min(startX, endX);
@@ -1812,7 +1818,7 @@ internal class Commands
         int width = maxX - minX + 1;
         int height = maxY - minY + 1;
 
-        Tile[,] tiles = new Tile[width, height];
+        Terraria.Tile[,] tiles = new Terraria.Tile[width, height];
 
         for (int x = minX; x <= maxX; x++)
         {
@@ -1820,7 +1826,7 @@ internal class Commands
             {
                 int indexX = x - minX;
                 int indexY = y - minY;
-                tiles[indexX, indexY] = (Tile)Main.tile[x, y].Clone();
+                tiles[indexX, indexY] = (Terraria.Tile)Main.tile[x, y].Clone();
             }
         }
 
@@ -1855,7 +1861,7 @@ internal class Commands
                         worldY < 0 || worldY >= Main.maxTilesY) continue;
 
                     // 完全复制图格数据
-                    Main.tile[worldX, worldY] = (Tile)clipboard.Tiles[x, y].Clone();
+                    Main.tile[worldX, worldY] = (Terraria.Tile)clipboard.Tiles![x, y].Clone();
                 }
             }
         }).ContinueWith(_ =>
