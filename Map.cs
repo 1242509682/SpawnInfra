@@ -226,17 +226,5 @@ namespace SpawnInfra
         }
 
         #endregion
-
-        #region 格式化文件名：移除非法字符
-        public static string FormatFileName(string text)
-        {
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            foreach (char c in invalidChars)
-            {
-                text = text.Replace(c.ToString(), "-");
-            }
-            return text;
-        }
-        #endregion
     }
 }

@@ -1,11 +1,14 @@
 ﻿using System.Reflection;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using TShockAPI;
 using TShockAPI.Modules;
 using static SpawnInfra.Plugin;
 using static SpawnInfra.Utils;
+using static Terraria.GameContent.Tile_Entities.TELogicSensor;
+using Terraria.GameContent.Tile_Entities;
 
 namespace SpawnInfra;
 
@@ -155,7 +158,7 @@ internal class Commands
                         }
 
                         // 保存到剪贴板
-                        var clipboard = CreateClipboardData(
+                        var clipboard = CreateClipData(
                             plr.TempPoints[0].X, plr.TempPoints[0].Y,
                             plr.TempPoints[1].X, plr.TempPoints[1].Y);
 
@@ -184,10 +187,10 @@ internal class Commands
                         }
 
                         // 计算粘贴位置（玩家当前位置为头顶）
-                        int pasteX = plr.TileX - clipboard.Width / 2;
-                        int pasteY = plr.TileY - clipboard.Height;
+                        int startX = plr.TileX - clipboard.Width / 2;
+                        int startY = plr.TileY - clipboard.Height;
 
-                        await AsyncPaste(plr, pasteX, pasteY, clipboard);
+                        await AsyncPaste(plr, startX, startY, clipboard);
                     }
                     break;
 
@@ -1796,6 +1799,9 @@ internal class Commands
 
         }).ContinueWith(delegate
         {
+            //还原也修一遍 避免互动家具失效
+            FixAll(startX, endX, startY, endY);
+
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已将选区还原，用时{value}秒。");
@@ -1846,7 +1852,7 @@ internal class Commands
     #endregion
 
     #region 创建剪贴板数据
-    private static ClipboardData CreateClipboardData(int startX, int startY, int endX, int endY)
+    private static ClipboardData CreateClipData(int startX, int startY, int endX, int endY)
     {
         int minX = Math.Min(startX, endX);
         int maxX = Math.Max(startX, endX);
@@ -1879,35 +1885,130 @@ internal class Commands
     #endregion
 
     #region 异步粘贴实现
-    public static Task AsyncPaste(TSPlayer plr, int pasteX, int pasteY, ClipboardData clipboard)
+    public static Task AsyncPaste(TSPlayer plr, int startX, int startY, ClipboardData clip)
     {
         //缓存 方便粘贴错了还原
-        CacheArea(plr, pasteX, pasteY, pasteX + clipboard.Width - 1, pasteY + clipboard.Height - 1);
+        CacheArea(plr, startX, startY, startX + clip.Width - 1, startY + clip.Height - 1);
         int secondLast = Utils.GetUnixTimestamp;
 
         return Task.Run(() =>
         {
-            for (int x = 0; x < clipboard.Width; x++)
+            for (int x = 0; x < clip.Width; x++)
             {
-                for (int y = 0; y < clipboard.Height; y++)
+                for (int y = 0; y < clip.Height; y++)
                 {
-                    int worldX = pasteX + x;
-                    int worldY = pasteY + y;
+                    int worldX = startX + x;
+                    int worldY = startY + y;
 
                     // 边界检查
                     if (worldX < 0 || worldX >= Main.maxTilesX ||
                         worldY < 0 || worldY >= Main.maxTilesY) continue;
 
                     // 完全复制图格数据
-                    Main.tile[worldX, worldY] = (Terraria.Tile)clipboard.Tiles![x, y].Clone();
+                    Main.tile[worldX, worldY] = (Terraria.Tile)clip.Tiles![x, y].Clone();
                 }
             }
         }).ContinueWith(_ =>
         {
+            //修复箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
+            FixAll(startX, startX + clip.Width - 1, startY, startY + clip.Height - 1);
+
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
-            plr.SendSuccessMessage($"已粘贴区域 ({clipboard.Width}x{clipboard.Height})，用时{value}秒。");
+            plr.SendSuccessMessage($"已粘贴区域 ({clip.Width}x{clip.Height})，用时{value}秒。");
         });
+    }
+    #endregion
+
+    #region 修复粘贴后家具无法互动：箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
+    private static void FixAll(int startX, int endX, int startY, int endY)
+    {
+        for (int x = startX; x <= endX; x++)
+        {
+            for (int y = startY; y <= endY; y++)
+            {
+                var tile = Main.tile[x, y];
+                if (tile == null || !tile.active()) continue;
+
+                //如果查找图格里是箱子
+                if (TileID.Sets.BasicChest[tile.type] && Chest.FindChest(x, y) == -1)
+                {
+                    // 创建新的 Chest  
+                    int newChest = Chest.CreateChest(x, y);
+                    if (newChest == -1) continue;
+                }
+
+                //物品框
+                if (tile.type == TileID.ItemFrame)
+                {
+                    var ItemFrame = Terraria.GameContent.Tile_Entities.TEItemFrame.Place(x, y);
+                    if (ItemFrame == -1) continue;
+                }
+
+                //武器架
+                if (tile.type == TileID.WeaponsRack || tile.type == TileID.WeaponsRack2)
+                {
+                    var WeaponsRack = Terraria.GameContent.Tile_Entities.TEWeaponsRack.Place(x, y);
+                    if (WeaponsRack == -1) continue;
+                }
+
+                //标牌 墓碑  广播盒
+                if ((tile.type == TileID.Signs ||
+                    tile.type == TileID.Tombstones ||
+                    tile.type == TileID.AnnouncementBox) &&
+                    tile.frameX % 36 == 0 && tile.frameY == 0 &&
+                    Sign.ReadSign(x, y, false) == -1)
+                {
+                    var sign = Sign.ReadSign(x, y, true);
+                    if (sign == -1) continue;
+                }
+
+                //逻辑感应器
+                if (tile.type == TileID.LogicSensor &&
+                    Terraria.GameContent.Tile_Entities.TELogicSensor.Find(x, y) == -1)
+                {
+                    int LogicSensor = Terraria.GameContent.Tile_Entities.TELogicSensor.Place(x, y);
+                    if (LogicSensor == -1) continue;
+
+                    ((Terraria.GameContent.Tile_Entities.TELogicSensor)TileEntity.ByID[LogicSensor]).logicCheck = (LogicCheckType)(tile.frameY / 18 + 1);
+                }
+
+                //人体模型
+                if (tile.type == TileID.DisplayDoll)
+                {
+                    var DisplayDoll = Terraria.GameContent.Tile_Entities.TEDisplayDoll.Place(x, y);
+                    if (DisplayDoll == -1) continue;
+                }
+
+                //盘子
+                if (tile.type == TileID.FoodPlatter)
+                {
+                    var FoodPlatter = Terraria.GameContent.Tile_Entities.TEFoodPlatter.Place(x, y);
+                    if (FoodPlatter == -1) continue;
+                }
+
+                //晶塔
+                if (tile.type == TileID.TeleportationPylon)
+                {
+                    var TeleportationPylon = Terraria.GameContent.Tile_Entities.TETeleportationPylon.Place(x, y);
+                    if (TeleportationPylon == -1) continue;
+                }
+
+                //训练假人（稻草人）
+                if (tile.type == TileID.TargetDummy)
+                {
+                   var TrainingDummy = Terraria.GameContent.Tile_Entities.TETrainingDummy.Place(x, y);
+                    if (TrainingDummy == -1) continue;
+                }
+
+                //衣帽架
+                if (tile.type == TileID.HatRack)
+                {
+                   var HatRack = Terraria.GameContent.Tile_Entities.TEHatRack.Place(x, y);
+                    if(HatRack == -1) continue;
+                }
+            }
+        }
     }
     #endregion
 }
