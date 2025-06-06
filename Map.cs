@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO.Compression;
 using Microsoft.Xna.Framework;
 using Terraria;
 using TShockAPI;
@@ -159,6 +160,82 @@ namespace SpawnInfra
                     }
                 }
             }
+        }
+        #endregion
+
+        #region 获取所有已存在的剪贴板名称
+        public static List<string> GetAllClipNames()
+        {
+            if (!Directory.Exists(Map.DataDir))
+                return new List<string>();
+
+            return Directory.GetFiles(Map.DataDir, "*_cp.dat")
+                            .Select(f => Path.GetFileNameWithoutExtension(f).Replace("_cp", ""))
+                            .ToList();
+        }
+        #endregion
+
+        #region 备份并压缩所有 .dat 文件后删除
+        public static void BackupAndDeleteAllDataFiles()
+        {
+            if (!Directory.Exists(Map.DataDir))
+                return;
+
+            // 构建压缩包保存路径
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            string backupFolder = Path.Combine(Map.DataDir, $"{timestamp}");
+            string zipFilePath = Path.Combine(Map.DataDir, $"{timestamp}.zip");
+
+            try
+            {
+                // 创建临时备份文件夹
+                Directory.CreateDirectory(backupFolder);
+
+                // 将所有 .dat 文件复制到备份文件夹
+                foreach (var file in Directory.GetFiles(Map.DataDir, "*.dat"))
+                {
+                    string destFile = Path.Combine(backupFolder, Path.GetFileName(file));
+                    File.Copy(file, destFile, overwrite: true);
+                }
+
+                // 压缩文件夹为 .zip
+                ZipFile.CreateFromDirectory(backupFolder, zipFilePath, CompressionLevel.SmallestSize, false);
+
+                // 删除临时文件夹（不再需要了）
+                Directory.Delete(backupFolder, recursive: true);
+
+                // 删除原始 .dat 文件
+                foreach (var file in Directory.GetFiles(Map.DataDir, "*.dat"))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"删除文件失败: {file}, 错误: {ex.Message}");
+                    }
+                }
+
+                TShock.Log.ConsoleInfo($"已成功备份并删除所有 .dat 文件，压缩包保存于:\n {zipFilePath}");
+            }
+            catch (Exception ex)
+            {
+                TShock.Log.ConsoleInfo($"备份和删除过程中出错: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region 格式化文件名：移除非法字符
+        public static string FormatFileName(string text)
+        {
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            foreach (char c in invalidChars)
+            {
+                text = text.Replace(c.ToString(), "-");
+            }
+            return text;
         }
         #endregion
     }

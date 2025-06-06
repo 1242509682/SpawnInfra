@@ -65,9 +65,11 @@ internal class Commands
                             plr.SendMessage("清选区并[c/F8F5B8:放液体]:[c/AEEBE9:/spi yt 1到4] (1水,2岩浆,3蜂蜜,微光)", color);
                             plr.SendMessage("将选区方块[c/F8F5B8:设为半砖]:[c/AEEBE9:/spi bz 1到5]（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
                             plr.SendMessage("为选区方块[c/F8F5B8:添加电路]:[c/AEEBE9:/spi wr 1到4]（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
-                            plr.SendMessage("*将选区[c/F8F5B8:还原上次]修改的图格:[c/AEEBE9:/spi bk]", color);
-                            plr.SendMessage("*为选区[c/F8F5B8:复制]当前的图格:[c/AEEBE9:/spi cp]", color);
-                            plr.SendMessage("*在头顶位置[c/F8F5B8:粘贴]图格:[c/AEEBE9:/spi pt]", color);
+                            plr.SendMessage("*将选区[c/F8F5B8:还原上次]修改图格:[c/AEEBE9:/spi bk]", color);
+                            plr.SendMessage("*[c/F8F5B8:复制]选区为自己名下建筑:[c/AEEBE9:/spi cp]", color);
+                            plr.SendMessage("*[c/F8F5B8:复制]选区为保存指定建筑:[c/AEEBE9:/spi cp 名字]", color);
+                            plr.SendMessage("*在头顶[c/F8F5B8:粘贴]自己名下建筑:[c/AEEBE9:/spi pt]", color);
+                            plr.SendMessage("*在头顶位置[c/F8F5B8:粘贴]指定建筑:[c/AEEBE9:/spi pt 名字]", color);
                             break;
                         }
 
@@ -92,10 +94,43 @@ internal class Commands
                                 plr.SendMessage("清选区并[c/F8F5B8:放液体]:[c/AEEBE9:/spi yt 1到4] (1水,2岩浆,3蜂蜜,微光)", color);
                                 plr.SendMessage("将选区方块[c/F8F5B8:设为半砖]:[c/AEEBE9:/spi bz 1到5]（1右斜坡,2左斜坡,3右半砖,4左半砖,5全砖）", color);
                                 plr.SendMessage("为选区方块[c/F8F5B8:添加电路]:[c/AEEBE9:/spi wr 1到4]（1只放电线,2清后再放,3清后再放并虚化,4清后再放加制动器）", color);
-                                plr.SendMessage("*将选区[c/F8F5B8:还原上次]修改的图格:[c/AEEBE9:/spi bk]", color);
-                                plr.SendMessage("*为选区[c/F8F5B8:复制]当前的图格:[c/AEEBE9:/spi cp]", color);
-                                plr.SendMessage("*在头顶位置[c/F8F5B8:粘贴]图格:[c/AEEBE9:/spi pt]", color);
+                                plr.SendMessage("*将选区[c/F8F5B8:还原上次]修改图格:[c/AEEBE9:/spi bk]", color);
+                                plr.SendMessage("*[c/F8F5B8:复制]选区为自己名下建筑:[c/AEEBE9:/spi cp]", color);
+                                plr.SendMessage("*[c/F8F5B8:复制]选区为保存指定建筑:[c/AEEBE9:/spi cp 名字]", color);
+                                plr.SendMessage("*在头顶[c/F8F5B8:粘贴]自己名下建筑:[c/AEEBE9:/spi pt]", color);
+                                plr.SendMessage("*在头顶位置[c/F8F5B8:粘贴]指定建筑:[c/AEEBE9:/spi pt 名字]", color);
                                 break;
+                        }
+                    }
+                    break;
+
+                case "l":
+                case "list":
+                case "列表":
+                    {
+                        if (NeedInGame()) return;
+
+                        var clipNames = Map.GetAllClipNames();
+
+                        if (clipNames.Count == 0)
+                        {
+                            plr.SendErrorMessage("当前[c/64E0DA:没有可用]的复制建筑。");
+                            plr.SendInfoMessage($"如何复制自己的建筑:");
+                            plr.SendInfoMessage($"使用选区指令:[c/64A1E0:/spi s]");
+                            plr.SendInfoMessage($"使用复制指令:[c/F56C77:/spi cp] 或 [c/63E0D8:/spi cp 建筑名]");
+                        }
+                        else
+                        {
+                            plr.SendMessage($"\n当前可用的复制建筑 [c/64E0DA:{clipNames.Count}个]:", color);
+
+                            // 加上索引编号（从 1 开始）
+                            for (int i = 0; i < clipNames.Count; i++)
+                            {
+                                string msg = $"[c/D0AFEB:{i + 1}.] [c/FFFFFF:{clipNames[i]}]";
+                                plr.SendMessage(msg, Color.AntiqueWhite);
+                            }
+
+                            plr.SendMessage($"可使用指定粘贴指令:[c/D0AFEB:/spi pt 名字]", color);
                         }
                     }
                     break;
@@ -796,7 +831,9 @@ internal class Commands
                         {
                             Config.Enabled = true;
                             plr.SendMessage("【生成基础建设】开服自动基建已启用，请重启服务器。", 250, 247, 105);
+                            plr.SendMessage("已清理tshck文件夹下的SPIData里所有可复制建筑数据", 250, 247, 105);
                             Config.Write();
+                            Map.BackupAndDeleteAllDataFiles();  //删除所有剪切板数据文件并备份压缩包
                         }
                     }
                     break;
@@ -847,6 +884,7 @@ internal class Commands
         var commands = new List<string>
         {
             "/spi s [1/2] —— 修改指定选择区域(画矩形)",
+            "/spi L —— 列出所有复制建筑",
             "/spi r 数量 —— 建小房子",
             "/spi hs —— 脚下生成监狱",
             "/spi ck —— 脚下生成仓库",
@@ -866,7 +904,7 @@ internal class Commands
             "/spi jz —— 生成附魔剑冢",
             "/spi jzt —— 生成金字塔",
             "/spi fh —— 生成腐化地",
-            "/spi rs —— 开服自动在出生点基建"
+            "/spi rs —— 出生点自动基建/清除所有建筑数据"
         };
 
         // 如果没有管理员权限，则移除一些命令
