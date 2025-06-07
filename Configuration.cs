@@ -23,8 +23,20 @@ internal class Configuration
     [JsonProperty("使用说明7", Order = -11)]
     public string Text7 { get; set; } = "[设置刷怪率]需所有在线玩家在刷怪场中心且击败[肉山]后生效";
 
-    [JsonProperty("开服自动基建", Order = -10)]
-    public bool Enabled { get; set; } = false;
+    [JsonProperty("插件开关", Order = -11)]
+    public bool Enabled { get; set; } = true;
+
+    [JsonProperty("重置是否自动基建", Order = -10)]
+    public bool SpawnInfra { get; set; } = false;
+
+    [JsonProperty("重置是否清理建筑", Order = -9)]
+    public bool DeleteAllDataFiles { get; set; } = true;
+
+    [JsonProperty("重置是否备份建筑", Order = -8)]
+    public bool BackerAllDataFiles { get; set; } = true;
+
+    [JsonProperty("复制建筑修复箱子物品", Order = -7)]
+    public bool FixCopyChestItem { get; set; } = true;
 
     [JsonProperty("开服指令表", Order = -2)]
     public string[] CommandList { get; set; } = new string[] { };
@@ -51,7 +63,7 @@ internal class Configuration
     public class ItemData
     {
         [JsonProperty("是否建监狱", Order = -9)]
-        public bool BigHouseEnabled { get; set; } = true;
+        public bool BigHouseEnabled { get; set; } = false;
 
         [JsonProperty("出生点偏移X", Order = -2)]
         public int spawnTileX { get; set; }
@@ -103,10 +115,10 @@ internal class Configuration
     public class ItemData1
     {
         [JsonProperty("是否建箱子", Order = -9)]
-        public bool SpawnChestEnabled { get; set; } = true;
+        public bool SpawnChestEnabled { get; set; } = false;
 
         [JsonProperty("启用墙壁与物品框", Order = -8)]
-        public bool WallAndItemFrame { get; set; } = true;
+        public bool WallAndItemFrame { get; set; } = false;
 
         [JsonProperty("出生点偏移X", Order = -3)]
         public int spawnTileX { get; set; }
@@ -170,11 +182,11 @@ internal class Configuration
     public class ItemData2
     {
         [JsonProperty("是否建世界平台", Order = -8)]
-        public bool WorldPlatformEnabled { get; set; } = true;
+        public bool WorldPlatformEnabled { get; set; } = false;
         [JsonProperty("是否建世界轨道", Order = -7)]
-        public bool WorldTrackEnabled { get; set; } = true;
+        public bool WorldTrackEnabled { get; set; } = false;
         [JsonProperty("是否建左海平台", Order = -6)]
-        public bool OceanPlatformEnabled { get; set; } = true;
+        public bool OceanPlatformEnabled { get; set; } = false;
 
         [JsonProperty("世界平台图格", Order = 2)]
         public int WorldPlatformID { get; set; }
@@ -223,15 +235,15 @@ internal class Configuration
     public class ItemData3
     {
         [JsonProperty("是否建地狱直通车", Order = -6)]
-        public bool HellTunnelEnabled { get; set; } = true;
+        public bool HellTunnelEnabled { get; set; } = false;
         [JsonProperty("是否建地狱平台", Order = -5)]
-        public bool HellPlatformEnabled { get; set; } = true;
+        public bool HellPlatformEnabled { get; set; } = false;
         [JsonProperty("是否建地狱轨道", Order = -4)]
-        public bool HellTrackEnabled { get; set; } = true;
+        public bool HellTrackEnabled { get; set; } = false;
         [JsonProperty("是否建微光直通车", Order = -3)]
-        public bool ShimmerBiomeTunnelEnabled { get; set; } = true;
+        public bool ShimmerBiomeTunnelEnabled { get; set; } = false;
         [JsonProperty("是否建刷怪场", Order = -2)]
-        public bool BrushMonstEnabled { get; set; } = true;
+        public bool BrushMonstEnabled { get; set; } = false;
         [JsonProperty("只清刷怪区域", Order = -1)]
         public bool ClearRegionEnabled { get; set; } = false;
         [JsonProperty("直通车贯穿刷怪场", Order = 0)]

@@ -12,11 +12,13 @@ using Terraria.GameContent.Tile_Entities;
 
 namespace SpawnInfra;
 
-internal class Commands
+internal static class Commands
 {
     public static async void command(CommandArgs args)
     {
         TSPlayer plr = args.Player;
+
+        if (!Config.Enabled) return;
 
         //随机颜色
         Random rand = new Random();
@@ -832,11 +834,25 @@ internal class Commands
                     {
                         if (plr.HasPermission("spawninfra.admin"))
                         {
-                            Config.Enabled = true;
-                            plr.SendMessage("【生成基础建设】开服自动基建已启用，请重启服务器。", 250, 247, 105);
-                            plr.SendMessage("已清理tshck文件夹下的SPIData里所有可复制建筑数据", 250, 247, 105);
-                            Config.Write();
-                            Map.BackupAndDeleteAllDataFiles();  //删除所有剪切板数据文件并备份压缩包
+                            //重置是否自动基建
+                            if (!Config.SpawnInfra)
+                            {
+                                Config.SpawnInfra = true;
+                                plr.SendMessage("【生成基础建设】开服自动基建已启用，请重启服务器。", 250, 247, 105);
+                                Config.Write();
+                            }
+                            else
+                            {
+                                Config.SpawnInfra = false;
+                                plr.SendMessage("【生成基础建设】开服自动基建已关闭", 250, 247, 105);
+                                Config.Write();
+                            }
+
+                            if (Config.DeleteAllDataFiles || Config.BackerAllDataFiles)
+                            {
+                                Map.BackupAndDeleteAllDataFiles();  //删除所有剪切板数据文件并备份压缩包
+                                plr.SendMessage("已备份或清理tshck文件夹下的SPIData里所有可复制建筑数据", 250, 247, 105);
+                            }
                         }
                     }
                     break;
@@ -1864,6 +1880,9 @@ internal class Commands
 
         Terraria.Tile[,] tiles = new Terraria.Tile[width, height];
 
+        // 定义箱子物品及其位置
+        var chestItems = new List<ChestItemData>();
+
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
@@ -1871,6 +1890,9 @@ internal class Commands
                 int indexX = x - minX;
                 int indexY = y - minY;
                 tiles[indexX, indexY] = (Terraria.Tile)Main.tile[x, y].Clone();
+
+                //获取箱子物品
+                GetChestItems(chestItems, x, y);
             }
         }
 
@@ -1879,7 +1901,8 @@ internal class Commands
             Width = width,
             Height = height,
             Tiles = tiles,
-            Origin = new Point(minX, minY)
+            Origin = new Point(minX, minY),
+            ChestItems = chestItems
         };
     }
     #endregion
@@ -1910,13 +1933,114 @@ internal class Commands
             }
         }).ContinueWith(_ =>
         {
-            //修复箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
+
+            // 修复箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
             FixAll(startX, startX + clip.Width - 1, startY, startY + clip.Height - 1);
+
+            // 定义偏移坐标
+            int baseX = startX - clip.Origin.X;
+            int baseY = startY - clip.Origin.Y;
+
+            RestoreChestItems(clip.ChestItems!, new Point(baseX, baseY));
 
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已粘贴区域 ({clip.Width}x{clip.Height})，用时{value}秒。");
         });
+    }
+    #endregion
+
+    #region 获取选区内箱子物品方法
+    private static void GetChestItems(List<ChestItemData> chestItems, int x, int y)
+    {
+        // 判断是否是箱子图格
+        if (!TileID.Sets.BasicChest[Main.tile[x, y].type] || !Config.FixCopyChestItem) return;
+
+        // 查找对应的 Chest 对象
+        int index = Chest.FindChest(x, y);
+        if (index < 0) return;
+
+        Chest chest = Main.chest[index];
+        if (chest == null) return;
+
+        // 只处理箱子的左上角图格
+        if (x != chest.x || y != chest.y) return;
+
+        //定义箱子内的物品格子位置
+        for (int slot = 0; slot < 40; slot++)
+        {
+            Item item = chest.item[slot];
+            if (item?.active == true)
+            {
+                // 克隆物品并记录其原来所在箱子的位置
+                chestItems.Add(new ChestItemData
+                {
+                    Item = (Item)item.DeepCopy(), // 克隆物品
+                    ChestPosition = new Point(x, y), // 记录箱子位置
+                    Slot = slot
+                });
+            }
+        }
+    }
+    #endregion
+
+    #region 还原箱子物品方法
+    private static void RestoreChestItems(IEnumerable<ChestItemData> chestItems, Point offset)
+    {
+        if (chestItems == null || !chestItems.Any() || !Config.FixCopyChestItem)
+            return;
+
+        foreach (var data in chestItems)
+        {
+            try
+            {
+                if (data.Item == null || data.Item.IsAir) continue;
+
+                // 计算新的箱子位置
+                int newX = data.ChestPosition.X + offset.X;
+                int newY = data.ChestPosition.Y + offset.Y;
+
+                // 查找箱子
+                int index = Chest.FindChest(newX, newY);
+                if (index == -1) continue;
+
+                //获取箱子对象
+                Chest chest = Main.chest[index];
+
+                // 检查槽位是否合法
+                if (data.Slot < 0 || data.Slot >= 40) continue;
+
+                // 克隆物品并设置到箱子槽位
+                chest.item[data.Slot] = (Item)data.Item.DeepCopy();
+            }
+            catch (Exception ex)
+            {
+                TShock.Log.ConsoleError($"还原箱子物品出错 @ {data.ChestPosition}: {ex}");
+            }
+        }
+    }
+    #endregion
+
+    #region 深度复制物品数据
+    public static Item DeepCopy(this Item item)
+    {
+        if (item == null || item.IsAir) return new Item();
+
+        var copy = new Item();
+        copy.SetDefaults(item.type);
+        copy.netID = item.netID;
+        copy.stack = item.stack;
+        copy.prefix = item.prefix;
+        copy.damage = item.damage;
+        copy.useTime = item.useTime;
+        copy.useAnimation = item.useAnimation;
+        copy.knockBack = item.knockBack;
+        copy.useStyle = item.useStyle;
+        copy.value = item.value;
+        copy.rare = item.rare;
+        copy.expert = item.expert;
+        copy.color = item.color;
+        return copy;
     }
     #endregion
 
@@ -1936,6 +2060,12 @@ internal class Commands
                     // 创建新的 Chest  
                     int newChest = Chest.CreateChest(x, y);
                     if (newChest == -1) continue;
+                }
+
+                // 同步箱子图格到主位置
+                if (tile.type == TileID.Containers || tile.type == TileID.Containers2)
+                {
+                    WorldGen.SquareTileFrame(x, y, true);
                 }
 
                 //物品框
@@ -1997,15 +2127,15 @@ internal class Commands
                 //训练假人（稻草人）
                 if (tile.type == TileID.TargetDummy)
                 {
-                   var TrainingDummy = Terraria.GameContent.Tile_Entities.TETrainingDummy.Place(x, y);
+                    var TrainingDummy = Terraria.GameContent.Tile_Entities.TETrainingDummy.Place(x, y);
                     if (TrainingDummy == -1) continue;
                 }
 
                 //衣帽架
                 if (tile.type == TileID.HatRack)
                 {
-                   var HatRack = Terraria.GameContent.Tile_Entities.TEHatRack.Place(x, y);
-                    if(HatRack == -1) continue;
+                    var HatRack = Terraria.GameContent.Tile_Entities.TEHatRack.Place(x, y);
+                    if (HatRack == -1) continue;
                 }
             }
         }

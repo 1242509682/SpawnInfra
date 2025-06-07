@@ -16,7 +16,7 @@ public class Plugin : TerrariaPlugin
     #region 插件信息
     public override string Name => "生成基础建设";
     public override string Author => "羽学";
-    public override Version Version => new Version(1, 6, 5);
+    public override Version Version => new Version(1, 6, 6);
     public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
     #endregion
 
@@ -74,7 +74,7 @@ public class Plugin : TerrariaPlugin
         var surface = Main.worldSurface * 0.7;
 
         //当"开服自动基建"开启时
-        if (Config.Enabled)
+        if (Config.SpawnInfra && Config.Enabled)
         {
             //查找“开服指令表”的命令
             foreach (var cmd in Config.CommandList)
@@ -197,13 +197,13 @@ public class Plugin : TerrariaPlugin
 
             TShock.Utils.Broadcast(
                 "基础建设已完成，如需重置布局\n" +
-                "请输入指令后重启服务器：/rm reset", 250, 247, 105);
+                "请输入指令后重启服务器：/spi reset", 250, 247, 105);
 
             TShockAPI.Commands.HandleCommand(TSPlayer.Server, "/clear i 9999");
             TShock.Utils.SaveWorld();
             Configuration.Read();
 
-            Config.Enabled = false;
+            Config.SpawnInfra = false;
             Config.Write();
         }
     }

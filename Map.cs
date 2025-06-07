@@ -3,6 +3,7 @@ using System.IO.Compression;
 using Microsoft.Xna.Framework;
 using Terraria;
 using TShockAPI;
+using static SpawnInfra.Plugin;
 
 namespace SpawnInfra
 {
@@ -24,10 +25,10 @@ namespace SpawnInfra
                 int count = reader.ReadInt32();
                 for (int i = 0; i < count; i++)
                 {
-                    int snapshotSize = reader.ReadInt32();
-                    var snapshot = new Dictionary<Point, Terraria.Tile>(snapshotSize);
+                    int size = reader.ReadInt32();
+                    var snapshot = new Dictionary<Point, Terraria.Tile>(size);
 
-                    for (int j = 0; j < snapshotSize; j++)
+                    for (int j = 0; j < size; j++)
                     {
                         int x = reader.ReadInt32();
                         int y = reader.ReadInt32();
@@ -82,7 +83,7 @@ namespace SpawnInfra
                     }
                 }
             }
-        } 
+        }
         #endregion
 
         #region 剪贴板持久化方法
@@ -120,12 +121,40 @@ namespace SpawnInfra
                     }
                 }
 
+                // 添加箱子物品加载
+                int Count = reader.ReadInt32();
+                var chestItems = new List<ChestItemData>(Count);
+                for (int i = 0; i < Count; i++)
+                {
+                    int posX = reader.ReadInt32();
+                    int posY = reader.ReadInt32();
+                    int slot = reader.ReadInt32();
+                    int type = reader.ReadInt32();
+                    int netId = reader.ReadInt32();
+                    int stack = reader.ReadInt32();
+                    byte prefix = reader.ReadByte();
+
+                    var item = new Item();
+                    item.SetDefaults(type);
+                    item.netID = netId;
+                    item.stack = stack;
+                    item.prefix = prefix;
+
+                    chestItems.Add(new ChestItemData
+                    {
+                        ChestPosition = new Point(posX, posY),
+                        Slot = slot,
+                        Item = item
+                    });
+                }
+
                 return new ClipboardData
                 {
                     Origin = new Point(originX, originY),
                     Width = width,
                     Height = height,
-                    Tiles = tiles
+                    Tiles = tiles,
+                    ChestItems = chestItems
                 };
             }
         }
@@ -159,6 +188,23 @@ namespace SpawnInfra
                         writer.Write(tile.wall);
                     }
                 }
+
+                // 在图格数据后写入箱子物品数据
+                writer.Write(clipboard.ChestItems?.Count ?? 0);
+                if (clipboard.ChestItems != null)
+                {
+                    foreach (var data in clipboard.ChestItems)
+                    {
+                        writer.Write(data.ChestPosition.X);
+                        writer.Write(data.ChestPosition.Y);
+                        writer.Write(data.Slot);
+                        writer.Write(data.Item?.type ?? 0);
+                        writer.Write(data.Item?.netID ?? 0);
+                        writer.Write(data.Item?.stack ?? 0);
+                        writer.Write(data.Item?.prefix ?? 0);
+
+                    }
+                }
             }
         }
         #endregion
@@ -188,36 +234,46 @@ namespace SpawnInfra
 
             try
             {
-                // 创建临时备份文件夹
-                Directory.CreateDirectory(backupFolder);
-
-                // 将所有 .dat 文件复制到备份文件夹
-                foreach (var file in Directory.GetFiles(Map.DataDir, "*.dat"))
+                //重置是否备份建筑
+                if (Config.BackerAllDataFiles)
                 {
-                    string destFile = Path.Combine(backupFolder, Path.GetFileName(file));
-                    File.Copy(file, destFile, overwrite: true);
+                    // 创建临时备份文件夹
+                    Directory.CreateDirectory(backupFolder);
+
+                    // 将所有 .dat 文件复制到备份文件夹
+                    foreach (var file in Directory.GetFiles(Map.DataDir, "*.dat"))
+                    {
+                        string destFile = Path.Combine(backupFolder, Path.GetFileName(file));
+                        File.Copy(file, destFile, overwrite: true);
+                    }
+
+                    // 压缩文件夹为 .zip
+                    ZipFile.CreateFromDirectory(backupFolder, zipFilePath, CompressionLevel.SmallestSize, false);
+
+                    // 删除临时文件夹（不再需要了）
+                    Directory.Delete(backupFolder, recursive: true);
+
+                    TShock.Log.ConsoleInfo($"已成功备份所有 .dat 文件，压缩包保存于:\n {zipFilePath}");
                 }
 
-                // 压缩文件夹为 .zip
-                ZipFile.CreateFromDirectory(backupFolder, zipFilePath, CompressionLevel.SmallestSize, false);
-
-                // 删除临时文件夹（不再需要了）
-                Directory.Delete(backupFolder, recursive: true);
-
-                // 删除原始 .dat 文件
-                foreach (var file in Directory.GetFiles(Map.DataDir, "*.dat"))
+                //重置是否清理建筑
+                if (Config.DeleteAllDataFiles)
                 {
-                    try
+                    // 删除原始 .dat 文件
+                    foreach (var file in Directory.GetFiles(Map.DataDir, "*.dat"))
                     {
-                        File.Delete(file);
+                        try
+                        {
+                            File.Delete(file);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"删除文件失败: {file}, 错误: {ex.Message}");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"删除文件失败: {file}, 错误: {ex.Message}");
-                    }
-                }
 
-                TShock.Log.ConsoleInfo($"已成功备份并删除所有 .dat 文件，压缩包保存于:\n {zipFilePath}");
+                    TShock.Log.ConsoleInfo($"已成功删除所有 .dat 文件");
+                }
             }
             catch (Exception ex)
             {
