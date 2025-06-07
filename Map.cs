@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using Microsoft.Xna.Framework;
 using Terraria;
 using TShockAPI;
@@ -86,7 +85,7 @@ namespace SpawnInfra
         }
         #endregion
 
-        #region 剪贴板持久化方法
+        #region 读取剪贴板方法
         internal static ClipboardData LoadClip(string name)
         {
             string filePath = Path.Combine(DataDir, $"{name}_cp.dat");
@@ -142,7 +141,7 @@ namespace SpawnInfra
 
                     chestItems.Add(new ChestItemData
                     {
-                        ChestPosition = new Point(posX, posY),
+                        Position = new Point(posX, posY),
                         Slot = slot,
                         Item = item
                     });
@@ -154,11 +153,13 @@ namespace SpawnInfra
                     Width = width,
                     Height = height,
                     Tiles = tiles,
-                    ChestItems = chestItems
+                    ChestItems = chestItems,
                 };
             }
         }
+        #endregion
 
+        #region 保存剪贴板方法
         internal static void SaveClip(string name, ClipboardData clipboard)
         {
             Directory.CreateDirectory(DataDir);
@@ -189,20 +190,19 @@ namespace SpawnInfra
                     }
                 }
 
-                // 在图格数据后写入箱子物品数据
+                // 保存箱子物品数据
                 writer.Write(clipboard.ChestItems?.Count ?? 0);
                 if (clipboard.ChestItems != null)
                 {
                     foreach (var data in clipboard.ChestItems)
                     {
-                        writer.Write(data.ChestPosition.X);
-                        writer.Write(data.ChestPosition.Y);
+                        writer.Write(data.Position.X);
+                        writer.Write(data.Position.Y);
                         writer.Write(data.Slot);
                         writer.Write(data.Item?.type ?? 0);
                         writer.Write(data.Item?.netID ?? 0);
                         writer.Write(data.Item?.stack ?? 0);
                         writer.Write(data.Item?.prefix ?? 0);
-
                     }
                 }
             }

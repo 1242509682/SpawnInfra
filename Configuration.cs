@@ -35,8 +35,11 @@ internal class Configuration
     [JsonProperty("重置是否备份建筑", Order = -8)]
     public bool BackerAllDataFiles { get; set; } = true;
 
-    [JsonProperty("复制建筑修复箱子物品", Order = -7)]
-    public bool FixCopyChestItem { get; set; } = true;
+    [JsonProperty("复制建筑修复家具物品", Order = -7)]
+    public bool FixCopyItem { get; set; } = true;
+
+    [JsonProperty("复制建筑修复晶塔", Order = -6)]
+    public bool FixCopyPylon { get; set; } = false;
 
     [JsonProperty("开服指令表", Order = -2)]
     public string[] CommandList { get; set; } = new string[] { };
