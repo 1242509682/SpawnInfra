@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.NetworkInformation;
 using Terraria;
 using Terraria.Map;
 using Terraria.Utilities;
@@ -6,7 +7,9 @@ using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
 using TShockAPI.Net;
+using Microsoft.Xna.Framework;
 using static SpawnInfra.Utils;
+using Terraria.ID;
 
 namespace SpawnInfra;
 
@@ -16,7 +19,7 @@ public class Plugin : TerrariaPlugin
     #region 插件信息
     public override string Name => "生成基础建设";
     public override string Author => "羽学";
-    public override Version Version => new Version(1, 6, 7);
+    public override Version Version => new Version(1, 6, 8);
     public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
     #endregion
 
@@ -31,6 +34,7 @@ public class Plugin : TerrariaPlugin
         //提高优先级避免覆盖CreateSpawn插件
         ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize, 20);
         GetDataHandlers.PlayerUpdate.Register(this.PlayerUpdate);
+        GetDataHandlers.TileEdit += OnTileEdit;
         TShockAPI.Commands.ChatCommands.Add(new Command("spawninfra.use", Commands.command, "spi", "基建")
         {
             HelpText = "生成基础建设"
@@ -44,6 +48,7 @@ public class Plugin : TerrariaPlugin
             GeneralHooks.ReloadEvent -= this._reloadHandler;
             ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGamePostInitialize);
             GetDataHandlers.PlayerUpdate.UnRegister(this.PlayerUpdate);
+            GetDataHandlers.TileEdit -= OnTileEdit;
             TShockAPI.Commands.ChatCommands.RemoveAll(x => x.CommandDelegate == Commands.command);
         }
         base.Dispose(disposing);
@@ -1329,6 +1334,103 @@ public class Plugin : TerrariaPlugin
                 }
             }
         }
+    }
+    #endregion
+
+    #region 连锁替换图格方法(/spi t 4模式)
+    public static Dictionary<string, int> SweepReplaceMode = new();
+    public static void OnTileEdit(object o, GetDataHandlers.TileEditEventArgs args)
+    {
+        var plr = args.Player;
+        if (plr == null || !plr.Active || !plr.IsLoggedIn || !Config.Enabled)
+            return;
+
+        //记录秒数
+        int secondLast = Utils.GetUnixTimestamp;
+        var tile = Main.tile[args.X, args.Y];
+        if (tile == null || !tile.active()) return;
+
+        if (args.Action == GetDataHandlers.EditAction.KillTile && args.EditData == 0)
+        {
+            // 检查是否处于连锁替换模式
+            if (SweepReplaceMode.TryGetValue(plr.Name, out var id))
+            {
+                args.Handled = true;
+
+                // 启动异步任务进行替换
+                VeinMiner(plr, args.X, args.Y, tile.type, id);
+
+                // 替换完成后退出模式
+                SweepReplaceMode.Remove(plr.Name);
+                TileHelper.GenAfter();
+                int value = Utils.GetUnixTimestamp - secondLast;
+                plr.SendSuccessMessage($"已连锁替换完成，用时{value}秒。");
+            }
+        }
+    }
+
+    public static void VeinMiner(TSPlayer plr, int x, int y, int KillType, int id)
+    {
+        var Tile = Main.tile[x, y];
+        var vein = GetVein(new List<Point>(), x, y, KillType);
+        if (Tile == null || !Tile.active() || Tile.type != KillType || vein.Count == 0) return;
+
+        //默认500格
+        if (vein.Count > Config.ReplaceCount)
+        {
+            plr.SendInfoMessage($"【[c/F66E78:失败]】替换区域超过[c/64A1E0:{Config.ReplaceCount}]格");
+            return;
+        }
+
+        // 替换图格
+        foreach (var point in vein)
+        {
+            WorldGen.KillTile(point.X, point.Y, false, false, true);
+            WorldGen.PlaceTile(point.X, point.Y, id);
+        }
+
+        var item2 = GetItemFromTile(x, y);
+        plr.SendInfoMessage($"【[c/79E365:成功]】替换[i/s{vein.Count}:{item2.netID}]");
+    }
+    #endregion
+
+    #region 连锁区域的8个方向（上下左右+斜4向）
+    public static List<Point> GetVein(List<Point> list, int x, int y, int type)
+    {
+        var stack = new Stack<(int X, int Y)>();
+        stack.Push((x, y));
+
+        while (stack.Any() && list.Count <= Config.ReplaceCount)
+        {
+            var (curX, curY) = stack.Pop();
+
+            if (!list.Any(p => p.Equals(new Point(curX, curY))) && Main.tile[curX, curY] is { } tile && tile.active() && tile.type == type)
+            {
+                list.Add(new Point(curX, curY));
+                var directions = new[] { (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1) };
+                foreach (var (dx, dy) in directions)
+                {
+                    var newX = curX + dx;
+                    var newY = curY + dy;
+                    if (newX >= 0 && newX < Main.maxTilesX && newY >= 0 && newY < Main.maxTilesY)
+                    {
+                        stack.Push((newX, newY));
+                    }
+                }
+            }
+        }
+        return list;
+    }
+    #endregion
+
+    #region 获取连锁破坏图格的物品属性
+    public static Item GetItemFromTile(int x, int y)
+    {
+        WorldGen.KillTile_GetItemDrops(x, y, Main.tile[x, y], out int id, out int stack, out _, out _);
+        Item item = new();
+        item.SetDefaults(id);
+        item.stack = stack;
+        return item;
     }
     #endregion
 

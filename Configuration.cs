@@ -41,6 +41,9 @@ internal class Configuration
     [JsonProperty("复制建筑修复晶塔", Order = -6)]
     public bool FixCopyPylon { get; set; } = false;
 
+    [JsonProperty("连锁替换图格上限", Order = -5)]
+    public int ReplaceCount { get; set; } = 500;
+
     [JsonProperty("开服指令表", Order = -2)]
     public string[] CommandList { get; set; } = new string[] { };
 

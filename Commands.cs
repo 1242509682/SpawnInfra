@@ -59,7 +59,7 @@ internal static class Commands
                             plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                             plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
                             plr.SendMessage("[c/F8F5B8:清理]区域: [c/AEEBE9:/spi c 1到8] (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
-                            plr.SendMessage("根据选区放[c/F8F5B8:手上方块]: [c/AEEBE9:/spi t 1到3] (1保留放置,2替换,3清完放置)", color);
+                            plr.SendMessage("根据选区放[c/F8F5B8:手上方块]: [c/AEEBE9:/spi t 1到4] (1保留放置,2替换,3清完放置,4连锁放置)", color);
                             plr.SendMessage("根据选区放[c/F8F5B8:手上墙壁]: [c/AEEBE9:/spi w 1和2] (1保留放置,2清完放置)", color);
                             plr.SendMessage("根据选区放[c/F8F5B8:手上喷漆]: [c/AEEBE9:/spi p 1到4] (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
                             plr.SendMessage("清选区并[c/F8F5B8:放液体]:[c/AEEBE9:/spi yt 1到4] (1水,2岩浆,3蜂蜜,微光)", color);
@@ -93,7 +93,7 @@ internal static class Commands
                                 plr.SendInfoMessage("使用方法: /spi s 1 放置或挖掘左上角方块");
                                 plr.SendInfoMessage("使用方法: /spi s 2 放置或挖掘右下角方块");
                                 plr.SendMessage("[c/F8F5B8:清理]区域: [c/AEEBE9:/spi c 1到8] (1方块,2墙,3液体,4喷漆,5不虚化,6电线,7制动器,8所有)", color);
-                                plr.SendMessage("根据选区放[c/F8F5B8:手上方块]: [c/AEEBE9:/spi t 1到3] (1保留放置,2替换,3清完放置)", color);
+                                plr.SendMessage("根据选区放[c/F8F5B8:手上方块]: [c/AEEBE9:/spi t 1到4] (1保留放置,2替换,3清完放置,4连锁放置)", color);
                                 plr.SendMessage("根据选区放[c/F8F5B8:手上墙壁]: [c/AEEBE9:/spi w 1和2] (1保留放置,2清完放置)", color);
                                 plr.SendMessage("根据选区放[c/F8F5B8:手上喷漆]: [c/AEEBE9:/spi p 1到4] (1喷方块,2喷墙,3所有,4切换方块虚化)", color);
                                 plr.SendMessage("清选区并[c/F8F5B8:放液体]:[c/AEEBE9:/spi yt 1到4] (1水,2岩浆,3蜂蜜,微光)", color);
@@ -118,8 +118,6 @@ internal static class Commands
                 case "list":
                 case "列表":
                     {
-                        if (NeedInGame()) return;
-
                         var clipNames = Map.GetAllClipNames();
 
                         if (clipNames.Count == 0)
@@ -273,55 +271,6 @@ internal static class Commands
                     }
                     break;
 
-                case "t":
-                case "方块":
-                case "block":
-                    {
-                        if (NeedInGame()) return;
-
-                        if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
-                        {
-                            plr.SendInfoMessage("您还没有选择区域！");
-                            plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
-                            plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
-                            return;
-                        }
-
-                        int type = 0;
-                        if (args.Parameters.Count > 1)
-                        {
-                            switch (args.Parameters[1].ToLowerInvariant())
-                            {
-                                case "1": case "保留": type = 1; break;
-                                case "2": case "替换": type = 2; break;
-                                case "3": case "清理": type = 3; break;
-                                default:
-                                    plr.SendInfoMessage("正确格式为:/spi t 1到3");
-                                    plr.SendMessage("1 - 保留原有放置", color);
-                                    plr.SendMessage("2 - 替换", color);
-                                    plr.SendMessage("3 - 清完所有后放置", color);
-                                    return;
-                            }
-                        }
-                        else
-                        {
-                            plr.SendInfoMessage("正确格式为:/spi t 1到3");
-                            plr.SendMessage("1 - 保留原有放置", color);
-                            plr.SendMessage("2 - 替换后放置", color);
-                            plr.SendMessage("3 - 清完所有后放置", color);
-                            return;
-                        }
-
-                        var Sel = plr.SelectedItem; //获取玩家手上物品
-                        if (Sel.createTile < 0)
-                        {
-                            plr.SendErrorMessage("请你手持需要放置的方块");
-                            return;
-                        }
-                        await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y, Sel.createTile, type, Sel.placeStyle);
-                    }
-                    break;
-
                 case "bz":
                 case "半砖":
                 case "Slope":
@@ -363,6 +312,70 @@ internal static class Commands
                     }
                     break;
 
+                case "t":
+                case "方块":
+                case "block":
+                    {
+                        if (NeedInGame()) return;
+                        int type = 0;
+                        if (args.Parameters.Count > 1)
+                        {
+                            switch (args.Parameters[1].ToLowerInvariant())
+                            {
+                                case "1": case "保留": type = 1; break;
+                                case "2": case "替换": type = 2; break;
+                                case "3": case "清理": type = 3; break;
+                                case "4": case "连锁": type = 4; break;
+                                default:
+                                    plr.SendInfoMessage("正确格式为:/spi t 1到4");
+                                    plr.SendMessage("1 - 保留原有放置", color);
+                                    plr.SendMessage("2 - 替换后放置", color);
+                                    plr.SendMessage("3 - 清完所有后放置", color);
+                                    plr.SendMessage("4 - 连锁放置", color);
+                                    return;
+                            }
+                        }
+                        else
+                        {
+                            plr.SendInfoMessage("正确格式为:/spi t 1到4");
+                            plr.SendMessage("1 - 保留原有放置", color);
+                            plr.SendMessage("2 - 替换后放置", color);
+                            plr.SendMessage("3 - 清完所有后放置", color);
+                            plr.SendMessage("4 - 连锁放置", color);
+                            return;
+                        }
+
+                        var Sel = plr.SelectedItem; //获取玩家手上物品
+                        if (Sel.createTile < 0)
+                        {
+                            plr.SendErrorMessage("请你手持需要放置的方块");
+                            return;
+                        }
+
+                        if (type != 4)
+                        {
+                            // 只有在非连锁模式下才需要选区
+                            if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
+                            {
+                                plr.SendInfoMessage("您还没有选择区域！");
+                                plr.SendMessage("使用方法: /spi s 1 选择左上角", color);
+                                plr.SendMessage("使用方法: /spi s 2 选择右下角", color);
+                                return;
+                            }
+
+                            await AsyncPlaceTile(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y,
+                                                 plr.TempPoints[1].X, plr.TempPoints[1].Y,
+                                                 Sel.createTile, type, Sel.placeStyle);
+                        }
+                        else
+                        {
+                            // 连锁模式：记录图格类型，不处理选区
+                            SweepReplaceMode[plr.Name] = Sel.createTile;
+                            plr.SendSuccessMessage("已进入连锁替换模式，请点击任意图格进行替换。");
+                        }
+                    }
+                    break;
+
                 case "w":
                 case "墙":
                 case "墙壁":
@@ -383,14 +396,15 @@ internal static class Commands
                             {
                                 case "1": case "保留": type = 1; break;
                                 case "2": case "清理": type = 2; break;
+                                case "3": case "连锁": type = 3; break;
                                 default:
-                                    plr.SendInfoMessage("正确格式为:/spi w 1和2 (1保留原有放置/2清完所有后放置)");
+                                    plr.SendInfoMessage("正确格式为:/spi w 1和2 (1保留原有放置/2清完所有后放置/3连锁放置)");
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendInfoMessage("正确格式为:/spi w 1和2 (1保留原有放置/2清完所有后放置)");
+                            plr.SendInfoMessage("正确格式为:/spi w 1和3 (1保留原有放置/2清完所有后放置/3连锁放置)");
                             return;
                         }
 
@@ -1612,10 +1626,11 @@ internal static class Commands
                     }
                     else
                     {
-                        plr.SendErrorMessage("正确格式为:/spi t 1到3");
+                        plr.SendErrorMessage("正确格式为:/spi t 1到4");
                         plr.SendInfoMessage("1 - 保留原有放置");
                         plr.SendInfoMessage("2 - 替换方块(会保留半砖属性)");
                         plr.SendInfoMessage("3 - 清完所有后放置");
+                        plr.SendInfoMessage("4 - 连锁放置模式");
                         return;
                     }
                 }

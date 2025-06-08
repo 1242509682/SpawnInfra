@@ -3,8 +3,6 @@ using Microsoft.Xna.Framework;
 
 namespace SpawnInfra;
 
-
-
 //剪贴板数据
 public class ClipboardData
 {
