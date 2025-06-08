@@ -30,8 +30,6 @@ internal static class Commands
 
         if (args.Parameters.Count >= 1)
         {
-            if (NeedWaitTask()) return;
-
             switch (args.Parameters[0].ToLower())
             {
                 case "help":
@@ -176,7 +174,7 @@ internal static class Commands
                 case "粘贴":
                 case "paste":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
 
                         string name = plr.Name; // 默认使用玩家自己的名字
                         bool fixChest = false;
@@ -224,7 +222,7 @@ internal static class Commands
                 case "back":
                 case "还原":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
 
                         await AsyncBack(plr, plr.TempPoints[0].X, plr.TempPoints[0].Y, plr.TempPoints[1].X, plr.TempPoints[1].Y);
                     }
@@ -234,7 +232,8 @@ internal static class Commands
                 case "clear":
                 case "清理":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
                         if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
                         {
                             plr.SendInfoMessage("您还没有选择区域！");
@@ -275,9 +274,9 @@ internal static class Commands
                 case "半砖":
                 case "Slope":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
-                        var type = 0;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
+                        var type = 0;
                         if (args.Parameters.Count > 1)
                         {
                             switch (args.Parameters[1].ToLowerInvariant())
@@ -316,7 +315,8 @@ internal static class Commands
                 case "方块":
                 case "block":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
                         int type = 0;
                         if (args.Parameters.Count > 1)
                         {
@@ -380,7 +380,8 @@ internal static class Commands
                 case "墙":
                 case "墙壁":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
                         if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
                         {
                             plr.SendInfoMessage("您还没有选择区域！");
@@ -424,7 +425,8 @@ internal static class Commands
                 case "电路":
                 case "电线":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
                         if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
                         {
                             plr.SendInfoMessage("您还没有选择区域！");
@@ -469,7 +471,8 @@ internal static class Commands
                 case "paint":
                 case "喷漆":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
                         if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
                         {
                             plr.SendInfoMessage("您还没有选择区域！");
@@ -534,7 +537,9 @@ internal static class Commands
                 case "液体":
                 case "linquid":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
+
                         if (plr.TempPoints[0].X == 0 || plr.TempPoints[1].X == 0)
                         {
                             plr.SendInfoMessage("您还没有选择区域！");
@@ -573,7 +578,7 @@ internal static class Commands
                 case "房屋":
                 case "room":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
 
                         int total;
                         // 检查是否提供了数量参数
@@ -603,7 +608,8 @@ internal static class Commands
                 case "别墅":
                 case "house":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
+
                         await AsyncGenLargeHouse(plr, plr.TileX, plr.TileY);
                     }
                     break;
@@ -612,7 +618,8 @@ internal static class Commands
                 case "ck":
                 case "Chest":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
+
                         await AsyncSpawnChest(plr, plr.TileX, plr.TileY);
                     }
                     break;
@@ -622,7 +629,8 @@ internal static class Commands
                 case "鱼池":
                 case "pond":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
                         int type = 0;
                         if (args.Parameters.Count > 1)
                         {
@@ -651,7 +659,8 @@ internal static class Commands
                 case "神庙":
                 case "Temple":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
+
                         await AsyncTemple(plr, plr.TileX, plr.TileY);
                     }
                     break;
@@ -661,7 +670,8 @@ internal static class Commands
                 case "地牢":
                 case "Dungeon":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
+
                         if ((Main.zenithWorld || Main.remixWorld) && plr.TileY < Main.worldSurface)
                         {
                             plr.SendErrorMessage("当前为颠倒种子,请前往地表生成地牢");
@@ -679,7 +689,8 @@ internal static class Commands
                 case "微光湖":
                 case "Shimmer":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
+
                         await AsyncShimmer(plr, plr.TileX, plr.TileY);
                     }
                     break;
@@ -689,7 +700,7 @@ internal static class Commands
                 case "刷怪场":
                 case "Brush":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
 
                         int height = 0;
                         int width = 0;
@@ -716,7 +727,8 @@ internal static class Commands
                 case "直通车":
                 case "hell":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
                         await AsyncHellTunnel(plr, plr.TileX, plr.TileY);
                     }
                     break;
@@ -726,7 +738,8 @@ internal static class Commands
                 case "世界平台":
                 case "WorldPlatform":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
+
 
                         int clear;
                         if (args.Parameters.Count < 2)
@@ -748,7 +761,7 @@ internal static class Commands
                             return;
                         }
 
-                        await AsyncWorldPlatform(plr, plr.TileY, clear, Sel.createTile);
+                        await AsyncWorldPlatform(plr, plr.TileY, clear, Sel.createTile, Sel.placeStyle);
                     }
                     break;
 
@@ -757,7 +770,7 @@ internal static class Commands
                 case "战斗平台":
                 case "FightPlatforms":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
 
                         int w; int h; int i;
 
@@ -781,7 +794,7 @@ internal static class Commands
                             plr.SendErrorMessage("请你手持需要放置的方块或平台");
                             return;
                         }
-                        await AsyncFightPlatforms(plr, plr.TileX, plr.TileY, w, h, i, Sel.createTile);
+                        await AsyncFightPlatforms(plr, plr.TileX, plr.TileY, w, h, i, Sel.createTile, Sel.placeStyle);
                     }
                     break;
 
@@ -790,7 +803,7 @@ internal static class Commands
                 case "箱子":
                 case "NewChest":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
                         await AsyncBuriedChest(plr, plr.TileX, plr.TileY);
                     }
@@ -800,7 +813,7 @@ internal static class Commands
                 case "pot":
                 case "罐子":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
                         await AsyncPlacePot(plr, plr.TileX, plr.TileY);
                     }
@@ -811,7 +824,7 @@ internal static class Commands
                 case "生命水晶":
                 case "LifeCrystal":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
                         await AsyncLifeCrystal(plr, plr.TileX, plr.TileY);
                     }
@@ -821,7 +834,7 @@ internal static class Commands
                 case "祭坛":
                 case "Altar":
                     {
-                        if (NeedInGame()) return;
+                        if (NeedInGame() || NeedWaitTask()) return;
 
                         await AsyncAltar(plr, plr.TileX, plr.TileY);
                     }
@@ -832,7 +845,7 @@ internal static class Commands
                 case "附魔剑":
                 case "sword":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
                         await AsyncSword(plr, plr.TileX, plr.TileY);
                     }
@@ -842,7 +855,7 @@ internal static class Commands
                 case "金字塔":
                 case "Pyramid":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
                         await AsyncPyramid(plr, plr.TileX, plr.TileY);
                     }
@@ -852,7 +865,7 @@ internal static class Commands
                 case "陷阱":
                 case "Trap":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
                         await AsyncTrap(plr, plr.TileX, plr.TileY);
                     }
@@ -862,7 +875,7 @@ internal static class Commands
                 case "腐化":
                 case "腐化地":
                     {
-                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin")) return;
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
                         await AsyncChasmRunner(plr, plr.TileX, plr.TileY);
                     }
@@ -890,8 +903,25 @@ internal static class Commands
 
                             if (Config.DeleteAllDataFiles || Config.BackerAllDataFiles)
                             {
-                                Map.BackupAndDeleteAllDataFiles();  //删除所有剪切板数据文件并备份压缩包
-                                plr.SendMessage("已备份或清理tshck文件夹下的SPIData里所有可复制建筑数据", 250, 247, 105);
+                                if (!Directory.Exists(Map.DataDir))
+                                {
+                                    Directory.CreateDirectory(Map.DataDir);
+                                    plr.SendMessage("tshok文件夹:未检测到SPIData文件夹,已创建", 250, 247, 105);
+                                    break;
+                                }
+
+                                var datFiles = Directory.GetFiles(Map.DataDir, "*.dat");
+                                if (datFiles.Length == 0)
+                                {
+                                    plr.SendMessage("SPIData文件夹:未找到任何.dat建筑文件,已返回", 250, 247, 105);
+                                    return;
+                                }
+                                else
+                                {
+                                    Map.BackupAndDeleteAllDataFiles();  //删除所有剪切板数据文件并备份压缩包
+                                    plr.SendMessage("已备份或清理:tshck文件夹下的SPIData里所有建筑数据", 250, 247, 105);
+                                }
+                                break;
                             }
                         }
                     }
@@ -987,8 +1017,9 @@ internal static class Commands
     #region 小房子
     public static Task AsyncGenRoom(TSPlayer plr, int posX, int posY, int total = 1, bool isRight = true, bool needCenter = false)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
             int num = 5;
             int num2 = 1 + total * num;
@@ -998,7 +1029,7 @@ internal static class Commands
                 GenRoom(num3, posY, isRight);
                 num3 += num;
             }
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1010,14 +1041,15 @@ internal static class Commands
     #region 监狱集群
     public static Task AsyncGenLargeHouse(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         var item = Config.Prison[0];
         int centerX = (posX - 6) - item.BigHouseWidth / 2;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            GenLargeHouse(centerX, posY + item.spawnTileY + 3, item.BigHouseWidth, item.BigHouseHeight);
+            GenLargeHouse(true, centerX, posY + item.spawnTileY + 3, item.BigHouseWidth, item.BigHouseHeight);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1029,14 +1061,15 @@ internal static class Commands
     #region 箱子集群
     public static Task AsyncSpawnChest(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         var item = Config.Chests[0];
         int centerX = (posX - 16) - item.ChestWidth / 2;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            SpawnChest(centerX, posY + item.spawnTileY + 3, item.ClearHeight, item.ChestWidth, item.ChestCount, item.ChestLayers);
+            SpawnChest(centerX, posY + item.spawnTileY + 3, item.ClearHeight, item.ChestWidth, item.ChestCount, item.ChestLayers, true);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1048,11 +1081,12 @@ internal static class Commands
     #region 鱼池
     private static Task AsyncGenPond(TSPlayer op, int posX, int posY, int style)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
             GenPond(posX, posY, style);
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1071,17 +1105,18 @@ internal static class Commands
     #region 直通车
     public static Task AsyncHellTunnel(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         var item = Config.HellTunnel[0];
         var sky = Main.worldSurface * 0.3499999940395355;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
             if (Main.zenithWorld || Main.remixWorld) //是颠倒种子
                 HellTunnel(posX, (int)sky - Config.WorldPlatform[0].WorldPlatformY, item.HellTrunnelWidth);
             else
                 HellTunnel(posX, posY + item.SpawnTileY + 3, item.HellTrunnelWidth);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1091,14 +1126,15 @@ internal static class Commands
     #endregion
 
     #region 世界平台
-    public static Task AsyncWorldPlatform(TSPlayer plr, int posY, int clear, int tile)
+    public static Task AsyncWorldPlatform(TSPlayer plr, int posY, int clear, int tile, int style)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            WorldPlatform(posY + 3, clear, tile);
+            WorldPlatform(posY + 3, clear, tile, style);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1108,14 +1144,15 @@ internal static class Commands
     #endregion
 
     #region 战斗平台
-    public static Task AsyncFightPlatforms(TSPlayer plr, int posX, int posY, int w, int h, int i, int tile)
+    public static Task AsyncFightPlatforms(TSPlayer plr, int posX, int posY, int w, int h, int i, int tile, int style)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            FightPlatforms(posX, posY + 3, w, h, i, tile);
+            FightPlatforms(posX, posY + 3, w, h, i, tile, style);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1127,14 +1164,17 @@ internal static class Commands
     #region 微光湖
     public static Task AsyncShimmer(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            WorldGen.ShimmerMakeBiome(posX, posY + 3);
+            WorldGen.ShimmerMakeBiome(posX, posY + 4);
             //脚下放个方块避免掉下去
-            WorldGen.PlaceTile(posX, posY + 4, 38, false, true, -1, 0);
+            WorldGen.PlaceTile(posX, posY + 3, 38, false, true, -1, 0);
+            WorldGen.PlaceTile(posX + 1, posY + 3, 38, false, true, -1, 0);
+            WorldGen.PlaceTile(posX - 1, posY + 3, 38, false, true, -1, 0);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1146,12 +1186,13 @@ internal static class Commands
     #region 神庙
     public static Task AsyncTemple(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            WorldGen.makeTemple(posX, posY + 3);
+            WorldGen.makeTemple(posX, posY + 16);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1163,12 +1204,13 @@ internal static class Commands
     #region 地牢
     public static Task AsyncDungeon(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-            WorldGen.MakeDungeon(posX, posY + 3);
+            WorldGen.MakeDungeon(posX, posY + 52);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1180,13 +1222,13 @@ internal static class Commands
     #region 刷怪场生成(异步方法)
     public static Task AsyncRockTrialField(TSPlayer plr, int posX, int posY, int Height, int Width)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
+        return Task.Run(() =>
         {
-
             RockTrialField2(posY - 9, posX, Height, Width, 2);
 
-        }).ContinueWith(delegate
+        }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
             int value = Utils.GetUnixTimestamp - secondLast;
@@ -1364,10 +1406,11 @@ internal static class Commands
     #region 金字塔
     public static Task AsyncPyramid(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
-            WorldGen.Pyramid(posX, posY + 3);
+            WorldGen.Pyramid(posX, posY + 7);
 
         }).ContinueWith(delegate
         {
@@ -1381,6 +1424,7 @@ internal static class Commands
     #region 宝物箱子
     public static Task AsyncBuriedChest(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         ushort type = (ushort)(Random.Shared.Next(2) == 0 ? 21 : 467);
         int Style = -1; // 默认样式为-1
@@ -1426,6 +1470,7 @@ internal static class Commands
     #region 生命水晶生成
     public static Task AsyncLifeCrystal(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
@@ -1444,6 +1489,7 @@ internal static class Commands
     #region 罐子随机生成（样式0到36）
     public static Task AsyncPlacePot(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
@@ -1462,6 +1508,7 @@ internal static class Commands
     #region 陷阱
     public static Task AsyncTrap(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
@@ -1480,6 +1527,7 @@ internal static class Commands
     #region 附魔剑冢
     public static Task AsyncSword(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
@@ -1498,11 +1546,12 @@ internal static class Commands
     #region 腐化地
     public static Task AsyncChasmRunner(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
             ClearEverything(posX, posY + 2);
-            WorldGen.ChasmRunner(posX, posY + 3, Random.Shared.Next(10), true);
+            WorldGen.ChasmRunner(posX, posY + 7, Random.Shared.Next(10), true);
 
         }).ContinueWith(delegate
         {
@@ -1516,6 +1565,7 @@ internal static class Commands
     #region 邪恶祭坛随机生成0或1（0是恶魔祭坛 1是猩红祭坛）
     public static Task AsyncAltar(TSPlayer plr, int posX, int posY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
@@ -1534,6 +1584,7 @@ internal static class Commands
     #region 清理选区
     public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
+        TileHelper.StartGen();
         CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
 
@@ -1603,6 +1654,7 @@ internal static class Commands
     #region 生成方块
     public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type, int sy)
     {
+        TileHelper.StartGen();
         CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1647,6 +1699,7 @@ internal static class Commands
     #region 生成墙壁
     public static Task AsyncPlaceWall(TSPlayer plr, int startX, int startY, int endX, int endY, int wallID, int type)
     {
+        TileHelper.StartGen();
         CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1684,6 +1737,7 @@ internal static class Commands
     #region 生成电线、虚化、制动器
     public static Task AsyncPlaceWire(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
+        TileHelper.StartGen();
         CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1732,6 +1786,7 @@ internal static class Commands
     #region 生成喷漆
     public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, byte paintID, int TileOrWall, bool hasPaint)
     {
+        TileHelper.StartGen();
         CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1797,6 +1852,7 @@ internal static class Commands
     #region 设为半砖
     public static Task AsyncSetSlope(TSPlayer plr, int startX, int startY, int endX, int endY, int SlopeID)
     {
+        TileHelper.StartGen();
         CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
@@ -1824,6 +1880,7 @@ internal static class Commands
     #region 生成液体
     public static Task Asynclinquid(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
+        TileHelper.StartGen();
         CacheArea(plr, startX, startY, endX, endY); //缓存
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(() =>
@@ -1849,6 +1906,7 @@ internal static class Commands
     #region 还原选区指令方法
     public static Task AsyncBack(TSPlayer plr, int startX, int startY, int endX, int endY)
     {
+        TileHelper.StartGen();
         int secondLast = Utils.GetUnixTimestamp;
         return Task.Run(delegate
         {
@@ -1893,17 +1951,14 @@ internal static class Commands
         var snapshot = stack.Pop();
         Map.SaveBack(plr.Name, stack);
 
-        Task.Factory.StartNew(() =>
+        foreach (var t in snapshot)
         {
-            foreach (var t in snapshot)
-            {
-                var pos = t.Key;
-                var orig = t.Value;
+            var pos = t.Key;
+            var orig = t.Value;
 
-                Main.tile[pos.X, pos.Y].CopyFrom(orig);
-                TSPlayer.All.SendTileSquareCentered(pos.X, pos.Y, 1);
-            }
-        });
+            Main.tile[pos.X, pos.Y].CopyFrom(orig);
+            TSPlayer.All.SendTileSquareCentered(pos.X, pos.Y, 1);
+        }
     }
     #endregion
 
@@ -1948,6 +2003,7 @@ internal static class Commands
     #region 异步粘贴实现
     public static Task AsyncPaste(TSPlayer plr, int startX, int startY, ClipboardData clip, bool fixChest)
     {
+        TileHelper.StartGen();
         //缓存 方便粘贴错了还原
         CacheArea(plr, startX, startY, startX + clip.Width - 1, startY + clip.Height - 1);
         int secondLast = Utils.GetUnixTimestamp;

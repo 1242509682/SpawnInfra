@@ -19,7 +19,7 @@ public class Plugin : TerrariaPlugin
     #region 插件信息
     public override string Name => "生成基础建设";
     public override string Author => "羽学";
-    public override Version Version => new Version(1, 6, 8);
+    public override Version Version => new Version(1, 6, 9);
     public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
     #endregion
 
@@ -34,7 +34,7 @@ public class Plugin : TerrariaPlugin
         //提高优先级避免覆盖CreateSpawn插件
         ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize, 20);
         GetDataHandlers.PlayerUpdate.Register(this.PlayerUpdate);
-        GetDataHandlers.TileEdit += OnTileEdit;
+        GetDataHandlers.TileEdit += OnTileEdit!;
         TShockAPI.Commands.ChatCommands.Add(new Command("spawninfra.use", Commands.command, "spi", "基建")
         {
             HelpText = "生成基础建设"
@@ -48,7 +48,7 @@ public class Plugin : TerrariaPlugin
             GeneralHooks.ReloadEvent -= this._reloadHandler;
             ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGamePostInitialize);
             GetDataHandlers.PlayerUpdate.UnRegister(this.PlayerUpdate);
-            GetDataHandlers.TileEdit -= OnTileEdit;
+            GetDataHandlers.TileEdit -= OnTileEdit!;
             TShockAPI.Commands.ChatCommands.RemoveAll(x => x.CommandDelegate == Commands.command);
         }
         base.Dispose(disposing);
@@ -91,14 +91,14 @@ public class Plugin : TerrariaPlugin
             //监狱
             foreach (var item in Config.Prison)
             {
-                GenLargeHouse(Main.spawnTileX + item.spawnTileX, Main.spawnTileY + item.spawnTileY, item.BigHouseWidth, item.BigHouseHeight);
+                GenLargeHouse(item.BigHouseEnabled,Main.spawnTileX + item.spawnTileX, Main.spawnTileY + item.spawnTileY, item.BigHouseWidth, item.BigHouseHeight);
             }
-
 
             //箱子
             foreach (var item in Config.Chests)
             {
-                SpawnChest(Main.spawnTileX + item.spawnTileX, Main.spawnTileY + item.spawnTileY, item.ClearHeight, item.ChestWidth, item.ChestCount, item.ChestLayers);
+                if(item.SpawnChestEnabled)
+                SpawnChest(Main.spawnTileX + item.spawnTileX, Main.spawnTileY + item.spawnTileY, item.ClearHeight, item.ChestWidth, item.ChestCount, item.ChestLayers,item.WallAndItemFrame);
             }
 
             //自建微光湖
@@ -146,11 +146,13 @@ public class Plugin : TerrariaPlugin
                         //刷怪场 = 地狱层 除一半 补上自定义高度 
                         RockTrialField((int)Main.rockLayer / 2 + item.BrushMonstHeight, Main.spawnTileX, item.BrushMonstHeight, item.BrushMonstWidth, item.BrushMonstCenter, item.ClearRegionEnabled);
                         //直通车 = 地狱 - 世界平台高度
-                        HellTunnel(Main.spawnTileX + item.SpawnTileX, (int)sky - Config.WorldPlatform[0].WorldPlatformY, item.HellTrunnelWidth);
+                        if (Config.HellTunnel[0].HellTunnelEnabled)
+                            HellTunnel(Main.spawnTileX + item.SpawnTileX, (int)sky - Config.WorldPlatform[0].WorldPlatformY, item.HellTrunnelWidth);
                     }
                     else //没啥不同就换个先后顺序
                     {
-                        HellTunnel(Main.spawnTileX + item.SpawnTileX, (int)sky - Config.WorldPlatform[0].WorldPlatformY, item.HellTrunnelWidth);
+                        if (Config.HellTunnel[0].HellTunnelEnabled)
+                            HellTunnel(Main.spawnTileX + item.SpawnTileX, (int)sky - Config.WorldPlatform[0].WorldPlatformY, item.HellTrunnelWidth);
                         RockTrialField((int)Main.rockLayer / 2 + item.BrushMonstHeight, Main.spawnTileX, item.BrushMonstHeight, item.BrushMonstWidth, item.BrushMonstCenter, item.ClearRegionEnabled);
                     }
 
@@ -167,11 +169,17 @@ public class Plugin : TerrariaPlugin
                     if (Config.HellTunnel[0].HellTrunnelCoverBrushMonst)
                     {
                         RockTrialField((int)Main.rockLayer, Main.spawnTileX, item.BrushMonstHeight, item.BrushMonstWidth, item.BrushMonstCenter, item.ClearRegionEnabled);
-                        HellTunnel(Main.spawnTileX + item.SpawnTileX, Main.spawnTileY + item.SpawnTileY, item.HellTrunnelWidth);
+                        if (Config.HellTunnel[0].HellTunnelEnabled)
+                        {
+                            HellTunnel(Main.spawnTileX + item.SpawnTileX, Main.spawnTileY + item.SpawnTileY, item.HellTrunnelWidth);
+                        }
                     }
                     else
                     {
-                        HellTunnel(Main.spawnTileX + item.SpawnTileX, Main.spawnTileY + item.SpawnTileY, item.HellTrunnelWidth);
+                        if (Config.HellTunnel[0].HellTunnelEnabled)
+                        {
+                            HellTunnel(Main.spawnTileX + item.SpawnTileX, Main.spawnTileY + item.SpawnTileY, item.HellTrunnelWidth);
+                        }
                         RockTrialField((int)Main.rockLayer, Main.spawnTileX, item.BrushMonstHeight, item.BrushMonstWidth, item.BrushMonstCenter, item.ClearRegionEnabled);
                     }
 
@@ -190,13 +198,16 @@ public class Plugin : TerrariaPlugin
             //世界平台
             foreach (var item in Config.WorldPlatform)
             {
-                if (Main.zenithWorld || Main.remixWorld) //天顶 颠倒以天空层往下算
+                if (item.WorldPlatformEnabled)
                 {
-                    WorldPlatform((int)sky - item.WorldPlatformY, item.WorldPlatformClearY, item.WorldPlatformID);
-                }
-                else //正常世界从出生点往上算
-                {
-                    WorldPlatform(Main.spawnTileY + item.WorldPlatformY, item.WorldPlatformClearY, item.WorldPlatformID);
+                    if (Main.zenithWorld || Main.remixWorld) //天顶 颠倒以天空层往下算
+                    {
+                        WorldPlatform((int)sky - item.WorldPlatformY, item.WorldPlatformClearY, item.WorldPlatformID, item.WorldPlatformStyle);
+                    }
+                    else //正常世界从出生点往上算
+                    {
+                        WorldPlatform(Main.spawnTileY + item.WorldPlatformY, item.WorldPlatformClearY, item.WorldPlatformID, item.WorldPlatformStyle);
+                    }
                 }
             }
 
@@ -600,9 +611,9 @@ public class Plugin : TerrariaPlugin
     #endregion
 
     #region 构造监狱集群方法
-    public static void GenLargeHouse(int startX, int startY, int width, int height)
+    public static void GenLargeHouse(bool BigHouseEnabled, int startX, int startY, int width, int height)
     {
-        if (!Config.Prison[0].BigHouseEnabled) return;
+        if (!BigHouseEnabled) return;
 
         int roomsAcross = width / 5;
         int roomsDown = height / 9;
@@ -684,12 +695,11 @@ public class Plugin : TerrariaPlugin
     #endregion
 
     #region 箱子集群+物品框方法
-    public static void SpawnChest(int posX, int posY, int hight, int width, int count, int layers)
+    public static void SpawnChest(int posX, int posY, int hight, int width, int count, int layers,bool ItemFrame)
     {
-        if (!Config.Chests[0].SpawnChestEnabled) return;
 
         // 如果启用了墙壁，则每层多预留3格空间
-        int spacing = Config.Chests[0].WallAndItemFrame ? 3 : 0;
+        int spacing = ItemFrame ? 3 : 0;
         int totalLayerHeight = width + Config.Chests[0].LayerHeight + spacing;
 
         int ClearHeight = hight + (layers - 1) * totalLayerHeight;
@@ -738,7 +748,7 @@ public class Plugin : TerrariaPlugin
                 }
 
                 // 如果启用了墙壁和物品框，则在上方添加
-                if (Config.Chests[0].WallAndItemFrame)
+                if (ItemFrame)
                 {
                     // 在箱子正上方 3 格空间中全部放满墙（仅当前箱子占用的 X 坐标）
                     for (int wx = currentXPos; wx < currentXPos + width; wx++)
@@ -856,7 +866,7 @@ public class Plugin : TerrariaPlugin
     #endregion
 
     #region 战斗平台（指令方法）
-    public static void FightPlatforms(int posX, int posY, int wide, int height, int interval, int type)
+    public static void FightPlatforms(int posX, int posY, int wide, int height, int interval, int type, int style)
     {
         var sky = Main.worldSurface * 0.3499999940395355;
 
@@ -909,7 +919,7 @@ public class Plugin : TerrariaPlugin
                 }
 
                 // 放置平台
-                WorldGen.PlaceTile(x, y, type, false, true, -1);
+                WorldGen.PlaceTile(x, y, type, false, true, -1, style);
             }
 
             // 3. 在平台上方一格放置篝火（每隔30格）
@@ -944,7 +954,7 @@ public class Plugin : TerrariaPlugin
     #endregion
 
     #region 世界平台
-    public static void WorldPlatform(int posY, int hight, int type)
+    public static void WorldPlatform(int posY, int hight, int type, int style)
     {
         int clear = Math.Max(3, hight);
 
@@ -969,8 +979,8 @@ public class Plugin : TerrariaPlugin
                 ClearEverything(x, y); // 清除方块和墙壁
             }
 
-            if (Config.WorldPlatform[0].WorldPlatformEnabled)
-                WorldGen.PlaceTile(x, posY, type, false, true, -1, Config.WorldPlatform[0].WorldPlatformStyle);
+            WorldGen.PlaceTile(x, posY, type, false, true, -1, style);
+
             if (Config.WorldPlatform[0].WorldTrackEnabled)
                 WorldGen.PlaceTile(x, posY - 1, 314, false, true, -1, 0);
         }
@@ -982,79 +992,78 @@ public class Plugin : TerrariaPlugin
     {
         var hell = 0;
 
-        if (Config.HellTunnel[0].HellTunnelEnabled)
+
+        int xtile;
+
+        for (hell = Main.UnderworldLayer + 10; hell <= Main.maxTilesY - 100; hell++)
         {
-            int xtile;
-
-            for (hell = Main.UnderworldLayer + 10; hell <= Main.maxTilesY - 100; hell++)
+            xtile = posX;
+            Parallel.For(posX, posX + 8, delegate (int cwidth, ParallelLoopState state)
             {
-                xtile = posX;
-                Parallel.For(posX, posX + 8, delegate (int cwidth, ParallelLoopState state)
+                if (Main.tile[cwidth, hell].active() && !Main.tile[cwidth, hell].lava())
                 {
-                    if (Main.tile[cwidth, hell].active() && !Main.tile[cwidth, hell].lava())
-                    {
-                        state.Stop();
-                        xtile = cwidth;
-                    }
-                });
-                if (!Main.tile[xtile, hell].active())
-                {
-                    break;
+                    state.Stop();
+                    xtile = cwidth;
                 }
-            }
-            var num = hell;
-            var Xstart = posX - 2;
-            Parallel.For(Xstart, Xstart + Width, delegate (int cx)
-            {
-                Parallel.For(posY, hell, delegate (int cy)
-                {
-                    var tile = Main.tile[cx, cy];
-                    if (Config.HellTunnel[0].DisableBlock)
-                    {
-                        if (Config.DisableBlock.Contains(tile.type))
-                        {
-                            TSPlayer.All.SendInfoMessage($"[地狱直通车] {cx}, {cy} 位置遇到禁止方块，已停止放置平台。");
-                            return;
-                        }
-                    }
-                    ClearEverything(cx, cy);
-                    if (cx == Xstart + Width / 2)
-                    {
-                        tile.type = Config.HellTunnel[0].Cord_TileID; //绳子
-                        tile.active(true);
-                        tile.slope(0);
-                        tile.halfBrick(false);
-                    }
-                    else if (cx == Xstart || cx == Xstart + Width - 1)
-                    {
-                        tile.type = Config.HellTunnel[0].Hell_BM_TileID; //边界方块
-                        tile.active(true);
-                        tile.slope(0);
-                        tile.halfBrick(false);
-                    }
-                });
             });
-
-            var platformStart = Xstart + 1;
-            var platformEnd = Xstart + Width - 2;
-            //确保平台与直通车等宽
-            for (var px = platformStart; px <= platformEnd; px++)
+            if (!Main.tile[xtile, hell].active())
             {
-                if (Config.HellTunnel[0].DisableBlock)
-                {
-                    if (Config.DisableBlock.Contains(Main.tile[px, posY].type))
-                    {
-                        TSPlayer.All.SendInfoMessage($"[地狱直通车] {px}, {posY} 位置遇到禁止方块，已停止放置平台。");
-                        continue;
-                    }
-                }
-                WorldGen.PlaceTile(px, posY, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);
-                for (var cy = posY + 1; cy <= hell; cy++)
-                {
-                    Main.tile[px, cy].wall = 155; // 放置墙壁
-                }
+                break;
             }
         }
+        var num = hell;
+        var Xstart = posX - 2;
+        Parallel.For(Xstart, Xstart + Width, delegate (int cx)
+        {
+            Parallel.For(posY, hell, delegate (int cy)
+            {
+                var tile = Main.tile[cx, cy];
+                if (Config.HellTunnel[0].DisableBlock)
+                {
+                    if (Config.DisableBlock.Contains(tile.type))
+                    {
+                        TSPlayer.All.SendInfoMessage($"[地狱直通车] {cx}, {cy} 位置遇到禁止方块，已停止放置平台。");
+                        return;
+                    }
+                }
+                ClearEverything(cx, cy);
+                if (cx == Xstart + Width / 2)
+                {
+                    tile.type = Config.HellTunnel[0].Cord_TileID; //绳子
+                    tile.active(true);
+                    tile.slope(0);
+                    tile.halfBrick(false);
+                }
+                else if (cx == Xstart || cx == Xstart + Width - 1)
+                {
+                    tile.type = Config.HellTunnel[0].Hell_BM_TileID; //边界方块
+                    tile.active(true);
+                    tile.slope(0);
+                    tile.halfBrick(false);
+                }
+            });
+        });
+
+        var platformStart = Xstart + 1;
+        var platformEnd = Xstart + Width - 2;
+        //确保平台与直通车等宽
+        for (var px = platformStart; px <= platformEnd; px++)
+        {
+            if (Config.HellTunnel[0].DisableBlock)
+            {
+                if (Config.DisableBlock.Contains(Main.tile[px, posY].type))
+                {
+                    TSPlayer.All.SendInfoMessage($"[地狱直通车] {px}, {posY} 位置遇到禁止方块，已停止放置平台。");
+                    continue;
+                }
+            }
+            WorldGen.PlaceTile(px, posY, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);
+            for (var cy = posY + 1; cy <= hell; cy++)
+            {
+                Main.tile[px, cy].wall = 155; // 放置墙壁
+            }
+        }
+
         return hell;
     }
     #endregion
@@ -1290,7 +1299,7 @@ public class Plugin : TerrariaPlugin
                 break;
         }
 
-        ushort tile = pondTheme.tile;
+        ushort Tile2 = pondTheme.tile;
         TileInfo platform = pondTheme.platform;
         int num = posX - 6;
         int num2 = 13;
@@ -1300,14 +1309,14 @@ public class Plugin : TerrariaPlugin
         {
             for (int j = posY; j < posY + num3; j++)
             {
-                ITile val = Main.tile[i, j];
-                val.ClearEverything();
+                var Tile = Main.tile[i, j];
+                Tile.ClearEverything();
                 if (i == num || i == num + num2 - 1 || j == posY + num3 - 1)
                 {
-                    val.type = tile;
-                    val.active(true);
-                    val.slope(0);
-                    val.halfBrick(false);
+                    Tile.type = Tile2;
+                    Tile.active(true);
+                    Tile.slope(0);
+                    Tile.halfBrick(false);
                 }
             }
             WorldGen.PlaceTile(i, posY, platform.id, false, true, -1, platform.style);
@@ -1356,15 +1365,18 @@ public class Plugin : TerrariaPlugin
             if (SweepReplaceMode.TryGetValue(plr.Name, out var id))
             {
                 args.Handled = true;
+                var task = Task.Run(() =>
+                {
+                    VeinMiner(plr, args.X, args.Y, tile.type, id);
+                });
 
-                // 启动异步任务进行替换
-                VeinMiner(plr, args.X, args.Y, tile.type, id);
-
-                // 替换完成后退出模式
-                SweepReplaceMode.Remove(plr.Name);
-                TileHelper.GenAfter();
-                int value = Utils.GetUnixTimestamp - secondLast;
-                plr.SendSuccessMessage($"已连锁替换完成，用时{value}秒。");
+                task.ContinueWith(t =>
+                {
+                    SweepReplaceMode.Remove(plr.Name);
+                    TileHelper.GenAfter();
+                    int value = Utils.GetUnixTimestamp - secondLast;
+                    plr.SendSuccessMessage($"连锁替换工作已完成，用时{value}秒。");
+                });
             }
         }
     }
@@ -1372,7 +1384,7 @@ public class Plugin : TerrariaPlugin
     public static void VeinMiner(TSPlayer plr, int x, int y, int KillType, int id)
     {
         var Tile = Main.tile[x, y];
-        var vein = GetVein(new List<Point>(), x, y, KillType);
+        var vein = GetVein(new HashSet<Point>(), x, y, KillType);
         if (Tile == null || !Tile.active() || Tile.type != KillType || vein.Count == 0) return;
 
         //默认500格
@@ -1382,6 +1394,10 @@ public class Plugin : TerrariaPlugin
             return;
         }
 
+        // 缓存原始图格的物品名称
+        var origItem = GetItemFromTile(x, y);
+        string name = $"[i/s{vein.Count}:{origItem.netID}]";
+
         // 替换图格
         foreach (var point in vein)
         {
@@ -1389,22 +1405,26 @@ public class Plugin : TerrariaPlugin
             WorldGen.PlaceTile(point.X, point.Y, id);
         }
 
-        var item2 = GetItemFromTile(x, y);
-        plr.SendInfoMessage($"【[c/79E365:成功]】替换[i/s{vein.Count}:{item2.netID}]");
+        plr.SendInfoMessage($"【[c/79E365:成功]】将 {name} 替换 [i/s{vein.Count}:{GetItemFromTile(x, y).netID}]");
     }
     #endregion
 
     #region 连锁区域的8个方向（上下左右+斜4向）
-    public static List<Point> GetVein(List<Point> list, int x, int y, int type)
+    public static HashSet<Point> GetVein(HashSet<Point> list, int x, int y, int type)
     {
-        var stack = new Stack<(int X, int Y)>();
+        if (list == null)
+            list = new HashSet<Point>(Config.ReplaceCount);
+
+        var stack = new Stack<(int X, int Y)>(Config.ReplaceCount);
         stack.Push((x, y));
 
-        while (stack.Any() && list.Count <= Config.ReplaceCount)
+        while (stack.Count > 0 && list.Count < Config.ReplaceCount)
         {
             var (curX, curY) = stack.Pop();
 
-            if (!list.Any(p => p.Equals(new Point(curX, curY))) && Main.tile[curX, curY] is { } tile && tile.active() && tile.type == type)
+            if (!list.Contains(new Point(curX, curY)) &&
+                Main.tile[curX, curY] is { } tile &&
+                tile.active() && tile.type == type)
             {
                 list.Add(new Point(curX, curY));
                 var directions = new[] { (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1) };

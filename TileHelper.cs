@@ -139,4 +139,18 @@ internal class TileHelper
     {
         return Lang._mapLegendCache[MapHelper.TileToLookup(type, style)].Value;
     }
+
+    #region 更新整个世界图格方法
+    public static void UpdateWorld()
+    {
+        foreach (RemoteClient sock in Netplay.Clients.Where(s => s.IsActive))
+        {
+            for (int i = Netplay.GetSectionX(0); i <= Netplay.GetSectionX(Main.maxTilesX); i++)
+            {
+                for (int j = Netplay.GetSectionY(0); j <= Netplay.GetSectionY(Main.maxTilesY); j++)
+                    sock.TileSections[i, j] = false;
+            }
+        }
+    }
+    #endregion
 }

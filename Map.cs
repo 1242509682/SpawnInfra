@@ -224,8 +224,7 @@ namespace SpawnInfra
         #region 备份并压缩所有 .dat 文件后删除
         public static void BackupAndDeleteAllDataFiles()
         {
-            if (!Directory.Exists(Map.DataDir))
-                return;
+            if (!Directory.Exists(Map.DataDir)) return;
 
             // 构建压缩包保存路径
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
@@ -241,7 +240,7 @@ namespace SpawnInfra
                     Directory.CreateDirectory(backupFolder);
 
                     // 将所有 .dat 文件复制到备份文件夹
-                    foreach (var file in Directory.GetFiles(Map.DataDir, "*.dat"))
+                    foreach (var file in Directory.GetFiles(Map.DataDir, "*_cp.dat"))
                     {
                         string destFile = Path.Combine(backupFolder, Path.GetFileName(file));
                         File.Copy(file, destFile, overwrite: true);
@@ -268,7 +267,7 @@ namespace SpawnInfra
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"删除文件失败: {file}, 错误: {ex.Message}");
+                            TShock.Log.ConsoleInfo($"删除文件失败: {file}, 错误: {ex.Message}");
                         }
                     }
 
