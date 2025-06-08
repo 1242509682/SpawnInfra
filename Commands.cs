@@ -71,7 +71,7 @@ internal static class Commands
 
                             if (plr.HasPermission("spawninfra.admin"))
                             {
-                                plr.SendMessage("*粘贴还原箱子物品建筑:[c/AEEBE9:/spi pt -f] 或 [c/AEEBE9:/spi pt 名字 -f]", color);
+                                plr.SendMessage("*粘贴[c/F8F5B8:还原箱子物品]建筑:[c/AEEBE9:/spi pt -f] 或 [c/AEEBE9:/spi pt 名字 -f]", color);
                             }
                             break;
                         }
@@ -105,7 +105,7 @@ internal static class Commands
 
                                 if (plr.HasPermission("spawninfra.admin"))
                                 {
-                                    plr.SendMessage("*粘贴还原箱子物品建筑:[c/AEEBE9:/spi pt -f] 或 [c/AEEBE9:/spi pt 名字 -f]", color);
+                                    plr.SendMessage("*粘贴[c/F8F5B8:还原箱子物品]建筑:[c/AEEBE9:/spi pt -f] 或 [c/AEEBE9:/spi pt 名字 -f]", color);
                                 }
                                 break;
                         }
@@ -113,6 +113,7 @@ internal static class Commands
                     break;
 
                 case "l":
+                case "ls":
                 case "list":
                 case "列表":
                     {
@@ -167,6 +168,9 @@ internal static class Commands
 
                         Map.SaveClip(name, clipboard);
                         plr.SendSuccessMessage($"已复制区域 ({clipboard.Width}x{clipboard.Height})");
+                        plr.SendInfoMessage($"粘贴指令:[c/64A1E0:/spi pt]");
+                        plr.SendInfoMessage($"撤销指令:[c/64A1E0:/spi bk]");
+                        plr.SendInfoMessage($"查建筑表:[c/64A1E0:/spi ls]");
                     }
                     break;
 
@@ -206,7 +210,9 @@ internal static class Commands
                         var clip = Map.LoadClip(name);
                         if (clip == null)
                         {
-                            plr.SendErrorMessage("剪贴板为空！");
+                            plr.SendErrorMessage("剪贴板为空!");
+                            plr.SendInfoMessage("复制指令:/spi cp");
+                            plr.SendInfoMessage("查建筑表:/spi ls");
                             return;
                         }
 
@@ -230,6 +236,7 @@ internal static class Commands
 
                 case "c":
                 case "clear":
+                case "ql":
                 case "清理":
                     {
                         if (NeedInGame() || NeedWaitTask()) return;
@@ -250,19 +257,35 @@ internal static class Commands
                                 case "1": case "t": case "方块": case "block": type = 1; break;
                                 case "2": case "w": case "墙": case "墙壁": case "will": type = 2; break;
                                 case "3": case "yt": case "水": case "液体": case "linquid": type = 3; break;
-                                case "4": case "p": case "paint": case "染料": type = 4; break;
-                                case "5": case "虚化": type = 5; break;
+                                case "4": case "p": case "paint": case "染料": case "喷漆": case "涂料": type = 4; break;
+                                case "5": case "虚化": case "实化": case "inac": type = 5; break;
                                 case "6": case "wr": case "wire": case "电线": case "电路": type = 6; break;
                                 case "7": case "ac": case "制动器": case "actuator": type = 7; break;
                                 case "8": case "all": case "全部": type = 8; break;
                                 default:
-                                    plr.SendInfoMessage("正确格式为:/spi c 1到4(1方块/2墙/3液体/4所有)");
+                                    plr.SendInfoMessage("正确格式为:/spi c 1到8");
+                                    plr.SendMessage("1 - 方块(t)", color);
+                                    plr.SendMessage("2 - 墙(w)", color);
+                                    plr.SendMessage("3 - 液体(yt)", color);
+                                    plr.SendMessage("4 - 喷漆(p)", color);
+                                    plr.SendMessage("5 - 实化(inac)", color);
+                                    plr.SendMessage("6 - 电路(wr)", color);
+                                    plr.SendMessage("7 - 制动器(ac)", color);
+                                    plr.SendMessage("8 - 所有(all)", color);
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendInfoMessage("正确格式为:/spi c 1到4(1方块/2墙/3液体/4所有)");
+                            plr.SendInfoMessage("正确格式为:/spi c 1到8");
+                            plr.SendMessage("1 - 方块(t)", color);
+                            plr.SendMessage("2 - 墙(w)", color);
+                            plr.SendMessage("3 - 液体(yt)", color);
+                            plr.SendMessage("4 - 喷漆(p)", color);
+                            plr.SendMessage("5 - 实化(inac)", color);
+                            plr.SendMessage("6 - 电路(wr)", color);
+                            plr.SendMessage("7 - 制动器(ac)", color);
+                            plr.SendMessage("8 - 所有(all)", color);
                             return;
                         }
 
@@ -312,6 +335,7 @@ internal static class Commands
                     break;
 
                 case "t":
+                case "fk":
                 case "方块":
                 case "block":
                     {
@@ -371,12 +395,13 @@ internal static class Commands
                         {
                             // 连锁模式：记录图格类型，不处理选区
                             SweepReplaceMode[plr.Name] = Sel.createTile;
-                            plr.SendSuccessMessage("已进入连锁替换模式，请点击任意图格进行替换。");
+                            plr.SendSuccessMessage("已进入连锁替换模式，请挖掘任意图格进行替换。");
                         }
                     }
                     break;
 
                 case "w":
+                case "q":
                 case "墙":
                 case "墙壁":
                     {
@@ -397,15 +422,18 @@ internal static class Commands
                             {
                                 case "1": case "保留": type = 1; break;
                                 case "2": case "清理": type = 2; break;
-                                case "3": case "连锁": type = 3; break;
                                 default:
-                                    plr.SendInfoMessage("正确格式为:/spi w 1和2 (1保留原有放置/2清完所有后放置/3连锁放置)");
+                                    plr.SendInfoMessage("正确格式为:/spi w 1和2");
+                                    plr.SendMessage("1 - 保留原有放置", color);
+                                    plr.SendMessage("2 - 替换后放置", color);
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendInfoMessage("正确格式为:/spi w 1和3 (1保留原有放置/2清完所有后放置/3连锁放置)");
+                            plr.SendInfoMessage("正确格式为:/spi w 1和2");
+                            plr.SendMessage("1 - 保留原有放置", color);
+                            plr.SendMessage("2 - 替换后放置", color);
                             return;
                         }
 
@@ -468,7 +496,10 @@ internal static class Commands
                     break;
 
                 case "p":
+                case "pq":
                 case "paint":
+                case "涂料":
+                case "油漆":
                 case "喷漆":
                     {
                         if (NeedInGame() || NeedWaitTask()) return;
@@ -558,13 +589,21 @@ internal static class Commands
                                 case "3": case "蜂蜜": case "honey": type = 2; break;
                                 case "4": case "微光": case "shimmer": type = 3; break;
                                 default:
-                                    plr.SendInfoMessage("正确格式为:/spi yt 1到4(水/岩浆/蜂蜜/微光)");
+                                    plr.SendInfoMessage("正确格式为:/spi yt 1到4");
+                                    plr.SendMessage("1 - 水", color);
+                                    plr.SendMessage("2 - 岩浆", color);
+                                    plr.SendMessage("3 - 蜂蜜", color);
+                                    plr.SendMessage("4 - 微光", color);
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendInfoMessage("正确格式为:/spi yt 1到4(水/岩浆/蜂蜜/微光)");
+                            plr.SendInfoMessage("正确格式为:/spi yt 1到4");
+                            plr.SendMessage("1 - 水", color);
+                            plr.SendMessage("2 - 岩浆", color);
+                            plr.SendMessage("3 - 蜂蜜", color);
+                            plr.SendMessage("4 - 微光", color);
                             return;
                         }
 
@@ -573,10 +612,11 @@ internal static class Commands
                     break;
 
                 case "r":
+                case "room":
+                case "wz":
                 case "房子":
                 case "屋子":
                 case "房屋":
-                case "room":
                     {
                         if (NeedInGame() || NeedWaitTask()) return;
 
@@ -590,7 +630,7 @@ internal static class Commands
 
                         if (!int.TryParse(args.Parameters[1], out total))
                         {
-                            plr.SendErrorMessage("输入的数量不合法");
+                            plr.SendErrorMessage("输入的数字不合法");
                             return;
                         }
 
@@ -604,8 +644,11 @@ internal static class Commands
                     break;
 
                 case "hs":
+                case "jy":
                 case "监狱":
+                case "bs":
                 case "别墅":
+                case "home":
                 case "house":
                     {
                         if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
@@ -616,7 +659,7 @@ internal static class Commands
 
                 case "仓库":
                 case "ck":
-                case "Chest":
+                case "Chests":
                     {
                         if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
@@ -641,13 +684,21 @@ internal static class Commands
                                 case "3": case "蜂蜜": case "honey": type = 2; break;
                                 case "4": case "微光": case "shimmer": type = 3; break;
                                 default:
-                                    plr.SendErrorMessage("正确格式为:/spi yc 1到4 (1水,2岩浆,3蜂蜜,4微光");
+                                    plr.SendInfoMessage("正确格式为:/spi yc 1到4");
+                                    plr.SendMessage("1 - 水", color);
+                                    plr.SendMessage("2 - 岩浆", color);
+                                    plr.SendMessage("3 - 蜂蜜", color);
+                                    plr.SendMessage("4 - 微光", color);
                                     return;
                             }
                         }
                         else
                         {
-                            plr.SendErrorMessage("正确格式为:/spi yc 1到4 (1水,2岩浆,3蜂蜜,4微光");
+                            plr.SendInfoMessage("正确格式为:/spi yc 1到4");
+                            plr.SendMessage("1 - 水", color);
+                            plr.SendMessage("2 - 岩浆", color);
+                            plr.SendMessage("3 - 蜂蜜", color);
+                            plr.SendMessage("4 - 微光", color);
                             return;
                         }
 
@@ -766,7 +817,7 @@ internal static class Commands
                     break;
 
                 case "fp":
-                case "战平":
+                case "平台":
                 case "战斗平台":
                 case "FightPlatforms":
                     {
@@ -776,7 +827,7 @@ internal static class Commands
 
                         if (args.Parameters.Count < 4)
                         {
-                            plr.SendErrorMessage("用法: /spi 战斗平台 宽度 高度 间隔");
+                            plr.SendErrorMessage("用法: /spi 平台 宽度 高度 间隔");
                             return;
                         }
 
@@ -784,7 +835,7 @@ internal static class Commands
                             !int.TryParse(args.Parameters[2], out h) ||
                             !int.TryParse(args.Parameters[3], out i))
                         {
-                            plr.SendErrorMessage("用法: /spi 战斗平台 宽度 高度 间隔");
+                            plr.SendErrorMessage("用法: /spi 平台 宽度 高度 间隔");
                             return;
                         }
 
@@ -800,8 +851,9 @@ internal static class Commands
 
                 case "bx":
                 case "宝箱":
+                case "xz":
                 case "箱子":
-                case "NewChest":
+                case "Chest":
                     {
                         if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
@@ -812,6 +864,8 @@ internal static class Commands
                 case "gz":
                 case "pot":
                 case "罐子":
+                case "gt":
+                case "罐头":
                     {
                         if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
@@ -821,6 +875,7 @@ internal static class Commands
 
                 case "sj":
                 case "水晶":
+                case "生命":
                 case "生命水晶":
                 case "LifeCrystal":
                     {
@@ -831,7 +886,11 @@ internal static class Commands
                     break;
 
                 case "jt":
+                case "恶魔":
                 case "祭坛":
+                case "恶魔祭坛":
+                case "猩红祭坛":
+                case "邪恶祭坛":
                 case "Altar":
                     {
                         if (NeedInGame() || NeedWaitTask()) return;
@@ -840,6 +899,8 @@ internal static class Commands
                     }
                     break;
 
+                case "fm":
+                case "附魔":
                 case "jz":
                 case "剑冢":
                 case "附魔剑":
@@ -881,6 +942,7 @@ internal static class Commands
                     }
                     break;
 
+                case "cz":
                 case "重置":
                 case "rs":
                 case "reset":
