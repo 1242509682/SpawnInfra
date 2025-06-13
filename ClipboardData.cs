@@ -12,6 +12,7 @@ public class ClipboardData
     public Point Origin { get; set; }
 
     public List<ChestItemData>? ChestItems { get; set; } // 箱子的物品
+    public List<Sign>? Signs { get; set; } //标牌
 }
 
 //箱子物品数据

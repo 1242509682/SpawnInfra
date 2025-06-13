@@ -1,16 +1,15 @@
 ﻿using Microsoft.Xna.Framework;
 using Terraria;
-using Terraria.DataStructures;
 using Terraria.ID;
 using TShockAPI;
 using static SpawnInfra.Plugin;
 using static SpawnInfra.Utils;
-using static Terraria.GameContent.Tile_Entities.TELogicSensor;
 
 namespace SpawnInfra;
 
 internal static class Commands
 {
+    #region 主体指令方法
     public static async void command(CommandArgs args)
     {
         TSPlayer plr = args.Player;
@@ -162,7 +161,7 @@ internal static class Commands
                         }
 
                         // 保存到剪贴板
-                        var clipboard = CreateClipData(
+                        var clipboard = Utils.CopyBuilding(
                             plr.TempPoints[0].X, plr.TempPoints[0].Y,
                             plr.TempPoints[1].X, plr.TempPoints[1].Y);
 
@@ -220,7 +219,7 @@ internal static class Commands
                         int startX = plr.TileX - clip.Width / 2;
                         int startY = plr.TileY - clip.Height;
 
-                        await AsyncPaste(plr, startX, startY, clip, fixChest);
+                        await SpawnBuilding(plr, startX, startY, clip, fixChest);
                     }
                     break;
 
@@ -993,7 +992,8 @@ internal static class Commands
 
         bool NeedInGame() => Utils.NeedInGame(plr);
         bool NeedWaitTask() => TileHelper.NeedWaitTask(plr);
-    }
+    } 
+    #endregion
 
     #region 帮助菜单
     private static int Help(CommandArgs args, TSPlayer plr, Color color, int Page)
@@ -1080,7 +1080,7 @@ internal static class Commands
     public static Task AsyncGenRoom(TSPlayer plr, int posX, int posY, int total = 1, bool isRight = true, bool needCenter = false)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             int num = 5;
@@ -1094,7 +1094,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成{total}个小房间，用时{value}秒。");
         });
     }
@@ -1104,7 +1104,7 @@ internal static class Commands
     public static Task AsyncGenLargeHouse(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         var item = Config.Prison[0];
         int centerX = (posX - 6) - item.BigHouseWidth / 2;
         return Task.Run(() =>
@@ -1114,7 +1114,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成监狱集群，用时{value}秒。");
         });
     }
@@ -1124,7 +1124,7 @@ internal static class Commands
     public static Task AsyncSpawnChest(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         var item = Config.Chests[0];
         int centerX = (posX - 16) - item.ChestWidth / 2;
         return Task.Run(() =>
@@ -1134,7 +1134,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成箱子集群，用时{value}秒。");
         });
     }
@@ -1144,14 +1144,14 @@ internal static class Commands
     private static Task AsyncGenPond(TSPlayer op, int posX, int posY, int style)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             GenPond(posX, posY, style);
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             string value2 = style switch
             {
                 1 => "岩浆",
@@ -1168,7 +1168,7 @@ internal static class Commands
     public static Task AsyncHellTunnel(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         var item = Config.HellTunnel[0];
         var sky = Main.worldSurface * 0.3499999940395355;
         return Task.Run(() =>
@@ -1181,7 +1181,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成直通车，用时{value}秒。");
         });
     }
@@ -1191,7 +1191,7 @@ internal static class Commands
     public static Task AsyncWorldPlatform(TSPlayer plr, int posY, int clear, int tile, int style)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             WorldPlatform(posY + 3, clear, tile, style);
@@ -1199,7 +1199,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成世界平台，用时{value}秒。");
         });
     }
@@ -1209,7 +1209,7 @@ internal static class Commands
     public static Task AsyncFightPlatforms(TSPlayer plr, int posX, int posY, int w, int h, int i, int tile, int style)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             FightPlatforms(posX, posY + 3, w, h, i, tile, style);
@@ -1217,7 +1217,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成战斗平台，用时{value}秒。");
         });
     }
@@ -1227,7 +1227,7 @@ internal static class Commands
     public static Task AsyncShimmer(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             WorldGen.ShimmerMakeBiome(posX, posY + 4);
@@ -1239,7 +1239,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成微光湖，用时{value}秒。");
         });
     }
@@ -1249,7 +1249,7 @@ internal static class Commands
     public static Task AsyncTemple(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             WorldGen.makeTemple(posX, posY + 16);
@@ -1257,7 +1257,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成神庙，用时{value}秒。");
         });
     }
@@ -1267,7 +1267,7 @@ internal static class Commands
     public static Task AsyncDungeon(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             WorldGen.MakeDungeon(posX, posY + 52);
@@ -1275,7 +1275,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成地牢，用时{value}秒。");
         });
     }
@@ -1285,7 +1285,7 @@ internal static class Commands
     public static Task AsyncRockTrialField(TSPlayer plr, int posX, int posY, int Height, int Width)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             RockTrialField2(posY - 9, posX, Height, Width, 2);
@@ -1293,175 +1293,9 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成刷怪场，用时{value}秒。");
         });
-    }
-    #endregion
-
-    #region 刷怪场2
-    public static void RockTrialField2(int posY, int posX, int Height, int Width, int Center)
-    {
-        // 直接使用 startY 作为基准点
-        var top = posY - Height;   // 顶部位置
-        var bottom = posY + Height; // 底部位置
-        var middle = (top + bottom) / 2 + Center; // 中心位置
-
-        var left = Math.Max(posX - Width, 0);
-        var right = Math.Min(posX + Width, Main.maxTilesX);
-
-        var CenterLeft = posX - 8 - Center;
-        var CenterRight = posX + 8 + Center;
-
-        // 遍历整个刷怪场高度范围 [top, bottom]
-        for (var y = top; y <= bottom; y++)
-        {
-            for (var x = left; x < right; x++)
-            {
-                if (Config.DisableBlock.Contains(Main.tile[x, y].type))
-                {
-                    TSPlayer.All.SendInfoMessage($"[刷怪场] {x}, {y} 位置遇到禁止方块，已停止放置。");
-                    return;
-                }
-
-                // 清除当前位置方块
-                ClearEverything(x, y);
-
-                // 顶部防液体层
-                WorldGen.PlaceTile(x, top, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-
-                // 底部层
-                WorldGen.PlaceTile(x, bottom, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-
-                // 底部岩浆
-                if (Config.HellTunnel[0].Lava && y == bottom - 1)
-                {
-                    WorldGen.PlaceLiquid(x, bottom - 1, 1, 1);
-                }
-
-                // 中间刷怪层
-                WorldGen.PlaceTile(x, middle, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-
-                // 平台层
-                WorldGen.PlaceTile(x, middle + 8 + Center, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);
-
-                // 墙壁（从 middle+3 到 middle+7+Center）
-                for (var wallY = middle + 3; wallY <= middle + 7 + Center; wallY++)
-                {
-                    Main.tile[x, wallY].wall = 155;
-                }
-
-                // 刷怪区警示墙
-                if (y >= middle + 1 && y <= middle + 3)
-                {
-                    for (var j = 61; j <= 83; j++)
-                    {
-                        WorldGen.PlaceWall(CenterLeft - j + 8 + Center, y, 164, false);
-                        WorldGen.PlaceWall(CenterRight + j - 8 - Center, y, 164, false);
-                    }
-                }
-
-                // 实体块
-                WorldGen.PlaceTile(x, middle + 11 + Center, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-                // 放计时器的平台
-                WorldGen.PlaceTile(x, middle + 2, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-                // 防掉怪下来
-                WorldGen.PlaceTile(x, middle + 4, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-
-                // 中心区域处理
-                if (x >= CenterLeft && x <= CenterRight)
-                {
-                    for (var wallY = middle - 10 - Center; wallY <= middle - 1; wallY++)
-                    {
-                        // 创建矩形判断
-                        if (wallY >= middle - 10 - Center && wallY <= middle - 1 && x >= CenterLeft + 1 && x <= CenterRight - 1)
-                        {
-                            // 挖空方块
-                            ClearEverything(x, wallY);
-                        }
-                        else
-                        {
-                            // 在矩形范围外放置方块
-                            WorldGen.PlaceTile(x, wallY, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-
-                            //放一层半砖平台让怪穿进中心区
-                            WorldGen.PlaceTile(CenterLeft - 1, wallY, 19, false, true, -1, 43);
-                            Main.tile[CenterLeft - 1, wallY].slope(2); // 设置为右斜坡
-                            WorldGen.PlaceTile(CenterRight + 1, wallY, 19, false, true, -1, 43);
-                            Main.tile[CenterRight + 1, wallY].slope(1); // 设置为左斜坡
-                        }
-                    }
-                }
-                else //不在中心 左右生成半砖推怪平台
-                {
-                    if (Config.DisableBlock.Contains(Main.tile[x, middle - 1].type))
-                    {
-                        TSPlayer.All.SendInfoMessage($"[刷怪场] {x}, {middle - 1} 位置遇到禁止方块，已停止放置。");
-                        return;
-                    }
-
-                    Main.tile[x, middle - 1].type = Config.HellTunnel[0].Hell_BM_TileID;
-                    Main.tile[x, middle - 1].active(true);
-                    Main.tile[x, middle - 1].halfBrick(false);
-
-                    // 根据x值确定斜坡方向
-                    if (x < Main.spawnTileX)
-                    {
-                        Main.tile[x, middle - 1].slope(3); // 设置为右斜坡
-                        WorldGen.PlaceTile(x, middle, 421, false, true, -1, 0); //刷怪场中间左边放1层传送带（刷怪取物品用）
-                    }
-                    else
-                    {
-                        Main.tile[x, middle - 1].slope(4); // 设置为左斜坡
-                        WorldGen.PlaceTile(x, middle, 422, false, true, -1, 0); //刷怪场中间右边放1层传送带（刷怪取物品用） 
-                    }
-
-                    // 把半砖替换成推怪平台
-                    WorldGen.PlaceTile(x, middle - 1, Config.HellTunnel[0].PlatformID, false, true, -1, Config.HellTunnel[0].PlatformStyle);
-                    //平台加电线+制动器
-                    WorldGen.PlaceWire(x, middle - 1);
-                    WorldGen.PlaceActuator(x, middle - 1);
-
-                    // 在电线的末端放置1/4秒计时器并连接
-                    PlaceWires(middle, CenterLeft, CenterRight);
-
-                    //在1/4秒计时器下面连接开关
-                    for (int i = 2; i <= 5; i++)
-                    {
-                        WorldGen.PlaceWire(CenterLeft - 1, middle + i);
-                        WorldGen.PlaceWire(CenterRight + 1, middle + i);
-                        WorldGen.PlaceTile(CenterLeft - 1, middle + 5, 136, false, true, -1, 0);
-                        WorldGen.PlaceTile(CenterRight + 1, middle + 5, 136, false, true, -1, 0);
-                    }
-                }
-            }
-        }
-
-        // 左右各放一列把刷怪场封闭起来
-        for (int y2 = top; y2 <= bottom; y2++)
-        {
-            var leftTile = Main.tile[left - 1, y2];
-            var rightTile = Main.tile[right, y2];
-            if (Config.DisableBlock.Contains(leftTile.type) || Config.DisableBlock.Contains(rightTile.type))
-            {
-                int stopX = Config.DisableBlock.Contains(leftTile.type) ? left - 1 : right;
-                TSPlayer.All.SendInfoMessage($"[刷怪场] {stopX}, {y2} 位置遇到禁止方块，已停止放置。");
-                return;
-            }
-
-            WorldGen.PlaceTile(left - 1, y2, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-            WorldGen.PlaceTile(right, y2, Config.HellTunnel[0].Hell_BM_TileID, false, true, -1, 0);
-        }
-    }
-
-    private static void PlaceWires(int middle, int CenterLeft, int CenterRight)
-    {
-        WorldGen.PlaceWire(CenterLeft - 1, middle + 1);
-        WorldGen.PlaceWire(CenterRight + 1, middle + 1);
-        WorldGen.PlaceWire(CenterLeft - 1, middle);
-        WorldGen.PlaceWire(CenterRight + 1, middle);
-        WorldGen.PlaceTile(CenterLeft - 1, middle + 1, 144, false, true, -1, 4);
-        WorldGen.PlaceTile(CenterRight + 1, middle + 1, 144, false, true, -1, 4);
     }
     #endregion
 
@@ -1469,7 +1303,7 @@ internal static class Commands
     public static Task AsyncPyramid(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             WorldGen.Pyramid(posX, posY + 7);
@@ -1477,7 +1311,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成金字塔，用时{value}秒。");
         });
     }
@@ -1487,7 +1321,7 @@ internal static class Commands
     public static Task AsyncBuriedChest(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         ushort type = (ushort)(Random.Shared.Next(2) == 0 ? 21 : 467);
         int Style = -1; // 默认样式为-1
         if (type == 21)
@@ -1523,7 +1357,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成自然箱子，用时{value}秒。");
         });
     }
@@ -1533,7 +1367,7 @@ internal static class Commands
     public static Task AsyncLifeCrystal(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             ClearEverything(posX, posY + 2);
@@ -1542,7 +1376,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成生命水晶，用时{value}秒。");
         });
     }
@@ -1552,7 +1386,7 @@ internal static class Commands
     public static Task AsyncPlacePot(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             ClearEverything(posX, posY + 2);
@@ -1561,7 +1395,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成罐子，用时{value}秒。");
         });
     }
@@ -1571,7 +1405,7 @@ internal static class Commands
     public static Task AsyncTrap(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             ClearEverything(posX, posY + 2);
@@ -1580,7 +1414,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成陷阱，用时{value}秒。");
         });
     }
@@ -1590,7 +1424,7 @@ internal static class Commands
     public static Task AsyncSword(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             ClearEverything(posX, posY + 2);
@@ -1599,7 +1433,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成附魔剑冢，用时{value}秒。");
         });
     }
@@ -1609,7 +1443,7 @@ internal static class Commands
     public static Task AsyncChasmRunner(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             ClearEverything(posX, posY + 2);
@@ -1618,7 +1452,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成腐化地，用时{value}秒。");
         });
     }
@@ -1628,7 +1462,7 @@ internal static class Commands
     public static Task AsyncAltar(TSPlayer plr, int posX, int posY)
     {
         TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             ClearEverything(posX, posY + 2);
@@ -1637,7 +1471,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成邪恶祭坛，用时{value}秒。");
         });
     }
@@ -1647,8 +1481,8 @@ internal static class Commands
     public static Task AsyncClear(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
         TileHelper.StartGen();
-        CacheArea(plr, startX, startY, endX, endY); //缓存
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, endX, endY); //缓存
+        int secondLast = GetUnixTimestamp;
 
         return Task.Run(() =>
         {
@@ -1707,7 +1541,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已清理区域，用时{value}秒。");
         });
     }
@@ -1717,8 +1551,8 @@ internal static class Commands
     public static Task AsyncPlaceTile(TSPlayer plr, int startX, int startY, int endX, int endY, int TileID, int type, int sy)
     {
         TileHelper.StartGen();
-        CacheArea(plr, startX, startY, endX, endY); //缓存
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, endX, endY); //缓存
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1752,7 +1586,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成方块，用时{value}秒。");
         });
     }
@@ -1762,8 +1596,8 @@ internal static class Commands
     public static Task AsyncPlaceWall(TSPlayer plr, int startX, int startY, int endX, int endY, int wallID, int type)
     {
         TileHelper.StartGen();
-        CacheArea(plr, startX, startY, endX, endY); //缓存
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, endX, endY); //缓存
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1790,7 +1624,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成墙壁，用时{value}秒。");
         });
     }
@@ -1800,8 +1634,8 @@ internal static class Commands
     public static Task AsyncPlaceWire(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
         TileHelper.StartGen();
-        CacheArea(plr, startX, startY, endX, endY); //缓存
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, endX, endY); //缓存
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1839,7 +1673,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成电路，用时{value}秒。");
         });
     }
@@ -1849,8 +1683,8 @@ internal static class Commands
     public static Task AsyncPlacePaint(TSPlayer plr, int startX, int startY, int endX, int endY, byte paintID, int TileOrWall, bool hasPaint)
     {
         TileHelper.StartGen();
-        CacheArea(plr, startX, startY, endX, endY); //缓存
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, endX, endY); //缓存
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1905,7 +1739,7 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成喷漆，用时{value}秒。");
         });
     }
@@ -1915,8 +1749,8 @@ internal static class Commands
     public static Task AsyncSetSlope(TSPlayer plr, int startX, int startY, int endX, int endY, int SlopeID)
     {
         TileHelper.StartGen();
-        CacheArea(plr, startX, startY, endX, endY); //缓存
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, endX, endY); //缓存
+        int secondLast = GetUnixTimestamp;
         return Task.Run(delegate
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1933,7 +1767,7 @@ internal static class Commands
         }).ContinueWith(delegate
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已将方块设为半砖，用时{value}秒。");
         });
     }
@@ -1943,8 +1777,8 @@ internal static class Commands
     public static Task Asynclinquid(TSPlayer plr, int startX, int startY, int endX, int endY, int type)
     {
         TileHelper.StartGen();
-        CacheArea(plr, startX, startY, endX, endY); //缓存
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, endX, endY); //缓存
+        int secondLast = GetUnixTimestamp;
         return Task.Run(() =>
         {
             for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
@@ -1959,116 +1793,22 @@ internal static class Commands
         }).ContinueWith(_ =>
         {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成液体，用时{value}秒。");
         });
     }
     #endregion
 
-    #region 还原选区指令方法
-    public static Task AsyncBack(TSPlayer plr, int startX, int startY, int endX, int endY)
-    {
-        TileHelper.StartGen();
-        int secondLast = Utils.GetUnixTimestamp;
-        return Task.Run(delegate
-        {
-            RestoreArea(plr);
-
-        }).ContinueWith(delegate
-        {
-            //还原也修一遍 避免互动家具失效
-            FixAll(startX, endX, startY, endY);
-            TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
-            plr.SendSuccessMessage($"已将选区还原，用时{value}秒。");
-        });
-    }
-    #endregion
-
-    #region 缓存选区原始图格方法
-    private static void CacheArea(TSPlayer plr, int startX, int startY, int endX, int endY)
-    {
-        var snapshot = new Dictionary<Point, Terraria.Tile>();
-
-        for (int x = Math.Min(startX, endX); x <= Math.Max(startX, endX); x++)
-            for (int y = Math.Min(startY, endY); y <= Math.Max(startY, endY); y++)
-                snapshot[new Point(x, y)] = (Terraria.Tile)Main.tile[x, y].Clone();
-
-        var stack = Map.LoadBack(plr.Name);
-        stack.Push(snapshot);
-        Map.SaveBack(plr.Name, stack);
-    }
-    #endregion
-
-    #region 还原图格方法
-    private static void RestoreArea(TSPlayer plr)
-    {
-        var stack = Map.LoadBack(plr.Name);
-        if (stack.Count == 0)
-        {
-            plr.SendErrorMessage("没有可还原的图格");
-            return;
-        }
-
-        var snapshot = stack.Pop();
-        Map.SaveBack(plr.Name, stack);
-
-        foreach (var t in snapshot)
-        {
-            var pos = t.Key;
-            var orig = t.Value;
-
-            Main.tile[pos.X, pos.Y].CopyFrom(orig);
-            TSPlayer.All.SendTileSquareCentered(pos.X, pos.Y, 1);
-        }
-    }
-    #endregion
-
-    #region 创建剪贴板数据
-    private static ClipboardData CreateClipData(int startX, int startY, int endX, int endY)
-    {
-        int minX = Math.Min(startX, endX);
-        int maxX = Math.Max(startX, endX);
-        int minY = Math.Min(startY, endY);
-        int maxY = Math.Max(startY, endY);
-
-        int width = maxX - minX + 1;
-        int height = maxY - minY + 1;
-
-        Terraria.Tile[,] tiles = new Terraria.Tile[width, height];
-
-        // 定义箱子物品及其位置
-        var chestItems = new List<ChestItemData>();
-        for (int x = minX; x <= maxX; x++)
-        {
-            for (int y = minY; y <= maxY; y++)
-            {
-                int indexX = x - minX;
-                int indexY = y - minY;
-                tiles[indexX, indexY] = (Terraria.Tile)Main.tile[x, y].Clone();
-
-                GetChestItems(chestItems, x, y); //获取箱子物品
-            }
-        }
-
-        return new ClipboardData
-        {
-            Width = width,
-            Height = height,
-            Tiles = tiles,
-            Origin = new Point(minX, minY),
-            ChestItems = chestItems,
-        };
-    }
-    #endregion
-
-    #region 异步粘贴实现
-    public static Task AsyncPaste(TSPlayer plr, int startX, int startY, ClipboardData clip, bool fixChest)
+    #region 生成建筑方法
+    public static Task SpawnBuilding(TSPlayer plr, int startX, int startY, ClipboardData clip, bool fixChest)
     {
         TileHelper.StartGen();
         //缓存 方便粘贴错了还原
-        CacheArea(plr, startX, startY, startX + clip.Width - 1, startY + clip.Height - 1);
-        int secondLast = Utils.GetUnixTimestamp;
+        SaveOrigTile(plr, startX, startY, startX + clip.Width - 1, startY + clip.Height - 1);
+        int secondLast = GetUnixTimestamp;
+        // 定义偏移坐标（从原始世界坐标到玩家头顶）
+        int baseX = startX - clip.Origin.X;
+        int baseY = startY - clip.Origin.Y;
 
         return Task.Run(() =>
         {
@@ -2087,221 +1827,45 @@ internal static class Commands
                     Main.tile[worldX, worldY] = (Terraria.Tile)clip.Tiles![x, y].Clone();
                 }
             }
-        }).ContinueWith(_ =>
-        {
-            // 修复箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
-            FixAll(startX, startX + clip.Width - 1, startY, startY + clip.Height - 1);
 
-            // 定义偏移坐标（从原始世界坐标到玩家头顶）
-            int baseX = startX - clip.Origin.X;
-            int baseY = startY - clip.Origin.Y;
+            // 修复家具实体
+            FixAll(startX, startX + clip.Width - 1, startY, startY + clip.Height - 1);
 
             //启动配置项和使用-f都可以还原箱子物品
             if (Config.FixCopyItem || fixChest)
                 RestoreChestItems(clip.ChestItems!, new Point(baseX, baseY));
 
+            //修复标牌信息
+            RestoreSignText(clip, baseX, baseY);
+
+        }).ContinueWith(_ =>
+        {
             TileHelper.GenAfter();
-            int value = Utils.GetUnixTimestamp - secondLast;
+            int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已粘贴区域 ({clip.Width}x{clip.Height})，用时{value}秒。");
         });
     }
     #endregion
 
-    #region 获取箱子物品方法
-    private static void GetChestItems(List<ChestItemData> chestItems, int x, int y)
+    #region 还原建筑方法
+    public static Task AsyncBack(TSPlayer plr, int startX, int startY, int endX, int endY)
     {
-        // 判断是否是箱子图格
-        if (!TileID.Sets.BasicChest[Main.tile[x, y].type]) return;
-
-        // 查找对应的 Chest 对象
-        int index = Chest.FindChest(x, y);
-        if (index < 0) return;
-
-        Chest chest = Main.chest[index];
-        if (chest == null) return;
-
-        // 只处理箱子的左上角图格
-        if (x != chest.x || y != chest.y) return;
-
-        //定义箱子内的物品格子位置
-        for (int slot = 0; slot < 40; slot++)
+        TileHelper.StartGen();
+        int secondLast = GetUnixTimestamp;
+        return Task.Run(delegate
         {
-            Item item = chest.item[slot];
-            if (item?.active == true)
-            {
-                // 克隆物品并记录其原来所在箱子的位置
-                chestItems.Add(new ChestItemData
-                {
-                    Item = (Item)item.DeepCopy(), // 克隆物品
-                    Position = new Point(x, y), // 记录箱子位置
-                    Slot = slot
-                });
-            }
-        }
-    }
-    #endregion
+            //还原前缓存一遍
+            SaveOrigTile(plr, startX, startY, endX, endY);
+            //还原方法
+            RollbackBuilding(plr);
 
-    #region 还原箱子物品方法
-    private static void RestoreChestItems(IEnumerable<ChestItemData> Chests, Point offset)
-    {
-        if (Chests == null || !Chests.Any()) return;
-
-        foreach (var data in Chests)
+        }).ContinueWith(delegate
         {
-            try
-            {
-                if (data.Item == null || data.Item.IsAir) continue;
-
-                // 计算新的箱子位置
-                int newX = data.Position.X + offset.X;
-                int newY = data.Position.Y + offset.Y;
-
-                // 查找箱子
-                int index = Chest.FindChest(newX, newY);
-                if (index == -1) continue;
-
-                //获取箱子对象
-                Chest chest = Main.chest[index];
-
-                // 检查槽位是否合法
-                if (data.Slot < 0 || data.Slot >= 40) continue;
-
-                // 克隆物品并设置到箱子槽位
-                chest.item[data.Slot] = (Item)data.Item.DeepCopy();
-            }
-            catch (Exception ex)
-            {
-                TShock.Log.ConsoleError($"还原箱子物品出错 @ {data.Position}: {ex}");
-            }
-        }
+            TileHelper.GenAfter();
+            int value = GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已将选区还原，用时{value}秒。");
+        });
     }
     #endregion
 
-    #region 深度复制物品数据
-    public static Item DeepCopy(this Item item)
-    {
-        if (item == null || item.IsAir) return new Item();
-
-        var copy = new Item();
-        copy.SetDefaults(item.type);
-        copy.netID = item.netID;
-        copy.stack = item.stack;
-        copy.prefix = item.prefix;
-        copy.damage = item.damage;
-        copy.useTime = item.useTime;
-        copy.useAnimation = item.useAnimation;
-        copy.knockBack = item.knockBack;
-        copy.useStyle = item.useStyle;
-        copy.value = item.value;
-        copy.rare = item.rare;
-        copy.expert = item.expert;
-        copy.color = item.color;
-        return copy;
-    }
-    #endregion
-
-    #region 修复粘贴后家具无法互动：箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
-    private static void FixAll(int startX, int endX, int startY, int endY)
-    {
-        for (int x = startX; x <= endX; x++)
-        {
-            for (int y = startY; y <= endY; y++)
-            {
-                var tile = Main.tile[x, y];
-                if (tile == null || !tile.active()) continue;
-
-                //如果查找图格里是箱子
-                if (TileID.Sets.BasicChest[tile.type] && Chest.FindChest(x, y) == -1)
-                {
-                    // 创建新的 Chest  
-                    int newChest = Chest.CreateChest(x, y);
-                    if (newChest == -1) continue;
-                }
-
-                // 同步箱子图格到主位置
-                if (tile.type == TileID.Containers || tile.type == TileID.Containers2)
-                {
-                    WorldGen.SquareTileFrame(x, y, true);
-                }
-
-                //物品框
-                if (tile.type == TileID.ItemFrame)
-                {
-                    var ItemFrame = Terraria.GameContent.Tile_Entities.TEItemFrame.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (ItemFrame == -1) continue;
-                }
-
-                //武器架
-                if (tile.type == TileID.WeaponsRack || tile.type == TileID.WeaponsRack2)
-                {
-                    var WeaponsRack = Terraria.GameContent.Tile_Entities.TEWeaponsRack.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (WeaponsRack == -1) continue;
-                }
-
-                //标牌 墓碑  广播盒
-                if ((tile.type == TileID.Signs ||
-                    tile.type == TileID.Tombstones ||
-                    tile.type == TileID.AnnouncementBox) &&
-                    tile.frameX % 36 == 0 && tile.frameY == 0 &&
-                    Sign.ReadSign(x, y, false) == -1)
-                {
-                    var sign = Sign.ReadSign(x, y, true);
-                    if (sign == -1) continue;
-                }
-
-                //逻辑感应器
-                if (tile.type == TileID.LogicSensor &&
-                    Terraria.GameContent.Tile_Entities.TELogicSensor.Find(x, y) == -1)
-                {
-                    int LogicSensor = Terraria.GameContent.Tile_Entities.TELogicSensor.Place(x, y);
-                    if (LogicSensor == -1) continue;
-
-                    ((Terraria.GameContent.Tile_Entities.TELogicSensor)TileEntity.ByID[LogicSensor]).logicCheck = (LogicCheckType)(tile.frameY / 18 + 1);
-                }
-
-                //人体模型
-                if (tile.type == TileID.DisplayDoll)
-                {
-                    var DisplayDoll = Terraria.GameContent.Tile_Entities.TEDisplayDoll.Place(x, y);
-                    if (DisplayDoll == -1) continue;
-                }
-
-                //盘子
-                if (tile.type == TileID.FoodPlatter)
-                {
-                    var FoodPlatter = Terraria.GameContent.Tile_Entities.TEFoodPlatter.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (FoodPlatter == -1) continue;
-                }
-
-                // 是否修复晶塔
-                if (Config.FixCopyPylon)
-                {
-                    if (tile.type == TileID.TeleportationPylon)
-                    {
-                        var TeleportationPylon = Terraria.GameContent.Tile_Entities.TETeleportationPylon.Place(x, y);
-                        if (TeleportationPylon == -1) continue;
-                    }
-                }
-
-                //训练假人（稻草人）
-                if (tile.type == TileID.TargetDummy)
-                {
-                    var TrainingDummy = Terraria.GameContent.Tile_Entities.TETrainingDummy.Place(x, y);
-                    if (TrainingDummy == -1) continue;
-                }
-
-                //衣帽架
-                if (tile.type == TileID.HatRack)
-                {
-                    var HatRack = Terraria.GameContent.Tile_Entities.TEHatRack.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (HatRack == -1) continue;
-                }
-            }
-        }
-    }
-    #endregion
 }

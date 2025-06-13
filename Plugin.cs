@@ -19,8 +19,13 @@ public class Plugin : TerrariaPlugin
     #region 插件信息
     public override string Name => "生成基础建设";
     public override string Author => "羽学";
-    public override Version Version => new Version(1, 6, 9);
+    public override Version Version => new Version(1, 7, 0);
     public override string Description => "给新世界创建NPC住房、箱子集群、洞穴刷怪场、地狱/微光直通车、地表和地狱世界级平台（轨道）";
+    #endregion
+
+    #region 全局变量
+    internal static Configuration Config = new();
+    internal static int GetUnixTimestamp => (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds; 
     #endregion
 
     #region 注册与释放
@@ -56,7 +61,6 @@ public class Plugin : TerrariaPlugin
     #endregion
 
     #region 配置重载读取与写入方法
-    internal static Configuration Config = new();
     private static void LoadConfig()
     {
         Config = Configuration.Read();
@@ -1279,73 +1283,6 @@ public class Plugin : TerrariaPlugin
     }
     #endregion
 
-    #region 鱼池（指令方法）
-    public static void GenPond(int posX, int posY, int style)
-    {
-        PondTheme pondTheme = new PondTheme();
-        switch (style)
-        {
-            case 1:
-                pondTheme.SetObsidian();
-                break;
-            case 2:
-                pondTheme.SetHoney();
-                break;
-            case 3:
-                pondTheme.SetGray();
-                break;
-            default:
-                pondTheme.SetGlass();
-                break;
-        }
-
-        ushort Tile2 = pondTheme.tile;
-        TileInfo platform = pondTheme.platform;
-        int num = posX - 6;
-        int num2 = 13;
-        int num3 = 32;
-
-        for (int i = num; i < num + num2; i++)
-        {
-            for (int j = posY; j < posY + num3; j++)
-            {
-                var Tile = Main.tile[i, j];
-                Tile.ClearEverything();
-                if (i == num || i == num + num2 - 1 || j == posY + num3 - 1)
-                {
-                    Tile.type = Tile2;
-                    Tile.active(true);
-                    Tile.slope(0);
-                    Tile.halfBrick(false);
-                }
-            }
-            WorldGen.PlaceTile(i, posY, platform.id, false, true, -1, platform.style);
-        }
-
-        for (int k = num + 1; k < num + num2 - 1; k++)
-        {
-            for (int l = posY + 1; l < posY + num3 - 1; l++)
-            {
-                ITile val2 = Main.tile[k, l];
-                val2.active(false);
-                val2.liquid = byte.MaxValue;
-                switch (style)
-                {
-                    case 1:
-                        val2.lava(true);
-                        break;
-                    case 2:
-                        val2.honey(true);
-                        break;
-                    case 3:
-                        val2.shimmer(true);
-                        break;
-                }
-            }
-        }
-    }
-    #endregion
-
     #region 连锁替换图格方法(/spi t 4模式)
     public static Dictionary<string, int> SweepReplaceMode = new();
     public static void OnTileEdit(object o, GetDataHandlers.TileEditEventArgs args)
@@ -1355,7 +1292,7 @@ public class Plugin : TerrariaPlugin
             return;
 
         //记录秒数
-        int secondLast = Utils.GetUnixTimestamp;
+        int secondLast = GetUnixTimestamp;
         var tile = Main.tile[args.X, args.Y];
         if (tile == null || !tile.active()) return;
 
@@ -1374,83 +1311,11 @@ public class Plugin : TerrariaPlugin
                 {
                     SweepReplaceMode.Remove(plr.Name);
                     TileHelper.GenAfter();
-                    int value = Utils.GetUnixTimestamp - secondLast;
+                    int value = GetUnixTimestamp - secondLast;
                     plr.SendSuccessMessage($"连锁替换工作已完成，用时{value}秒。");
                 });
             }
         }
-    }
-
-    public static void VeinMiner(TSPlayer plr, int x, int y, int KillType, int id)
-    {
-        var Tile = Main.tile[x, y];
-        var vein = GetVein(new HashSet<Point>(), x, y, KillType);
-        if (Tile == null || !Tile.active() || Tile.type != KillType || vein.Count == 0) return;
-
-        //默认500格
-        if (vein.Count > Config.ReplaceCount)
-        {
-            plr.SendInfoMessage($"【[c/F66E78:失败]】替换区域超过[c/64A1E0:{Config.ReplaceCount}]格");
-            return;
-        }
-
-        // 缓存原始图格的物品名称
-        var origItem = GetItemFromTile(x, y);
-        string name = $"[i/s{vein.Count}:{origItem.netID}]";
-
-        // 替换图格
-        foreach (var point in vein)
-        {
-            WorldGen.KillTile(point.X, point.Y, false, false, true);
-            WorldGen.PlaceTile(point.X, point.Y, id);
-        }
-
-        plr.SendInfoMessage($"【[c/79E365:成功]】将 {name} 替换 [i/s{vein.Count}:{GetItemFromTile(x, y).netID}]");
-    }
-    #endregion
-
-    #region 连锁区域的8个方向（上下左右+斜4向）
-    public static HashSet<Point> GetVein(HashSet<Point> list, int x, int y, int type)
-    {
-        if (list == null)
-            list = new HashSet<Point>(Config.ReplaceCount);
-
-        var stack = new Stack<(int X, int Y)>(Config.ReplaceCount);
-        stack.Push((x, y));
-
-        while (stack.Count > 0 && list.Count < Config.ReplaceCount)
-        {
-            var (curX, curY) = stack.Pop();
-
-            if (!list.Contains(new Point(curX, curY)) &&
-                Main.tile[curX, curY] is { } tile &&
-                tile.active() && tile.type == type)
-            {
-                list.Add(new Point(curX, curY));
-                var directions = new[] { (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1) };
-                foreach (var (dx, dy) in directions)
-                {
-                    var newX = curX + dx;
-                    var newY = curY + dy;
-                    if (newX >= 0 && newX < Main.maxTilesX && newY >= 0 && newY < Main.maxTilesY)
-                    {
-                        stack.Push((newX, newY));
-                    }
-                }
-            }
-        }
-        return list;
-    }
-    #endregion
-
-    #region 获取连锁破坏图格的物品属性
-    public static Item GetItemFromTile(int x, int y)
-    {
-        WorldGen.KillTile_GetItemDrops(x, y, Main.tile[x, y], out int id, out int stack, out _, out _);
-        Item item = new();
-        item.SetDefaults(id);
-        item.stack = stack;
-        return item;
     }
     #endregion
 
