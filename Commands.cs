@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.GameContent.Biomes.CaveHouse;
 using Terraria.ID;
+using Terraria.WorldBuilding;
 using TShockAPI;
 using static SpawnInfra.Plugin;
 using static SpawnInfra.Utils;
@@ -613,7 +615,6 @@ internal static class Commands
                 case "r":
                 case "room":
                 case "wz":
-                case "房子":
                 case "屋子":
                 case "房屋":
                     {
@@ -642,13 +643,11 @@ internal static class Commands
                     }
                     break;
 
-                case "hs":
                 case "jy":
                 case "监狱":
                 case "bs":
                 case "别墅":
                 case "home":
-                case "house":
                     {
                         if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
 
@@ -789,7 +788,6 @@ internal static class Commands
                 case "WorldPlatform":
                     {
                         if (NeedInGame() || NeedWaitTask()) return;
-
 
                         int clear;
                         if (args.Parameters.Count < 2)
@@ -941,6 +939,58 @@ internal static class Commands
                     }
                     break;
 
+                case "hs":
+                case "house":
+                case "洞穴房":
+                case "洞穴屋":
+                    {
+                        if (NeedInGame() || !plr.HasPermission("spawninfra.admin") || NeedWaitTask()) return;
+
+                        if (args.Parameters.Count < 2)
+                        {
+                            plr.SendInfoMessage("生成野生房屋:/spi hs 类型");
+                            plr.SendMessage("1 - 木屋", color);
+                            plr.SendMessage("2 - 沙漠", color);
+                            plr.SendMessage("3 - 雪原", color);
+                            plr.SendMessage("4 - 丛林", color);
+                            plr.SendMessage("5 - 花岗岩", color);
+                            plr.SendMessage("6 - 大理石", color);
+                            plr.SendMessage("7 - 蘑菇", color);
+                            return;
+                        }
+
+                        HouseType type;
+                        switch (args.Parameters[1].ToLowerInvariant())
+                        {
+                            case "1": case "木屋": case "wood": type = HouseType.Wood; break;
+                            case "2": case "沙漠": case "desert": type = HouseType.Desert; break;
+                            case "3": case "雪原": case "ice": type = HouseType.Ice; break;
+                            case "4": case "丛林": case "jungle": type = HouseType.Jungle; break;
+                            case "5": case "花岗岩": case "granite": type = HouseType.Granite; break;
+                            case "6": case "大理石": case "marble": type = HouseType.Marble; break;
+                            case "7": case "蘑菇": case "mushroom": type = HouseType.Mushroom; break;
+                            default:
+                                plr.SendInfoMessage("无效类型! 可用类型:");
+                                plr.SendMessage("1 - 木屋", color);
+                                plr.SendMessage("2 - 沙漠", color);
+                                plr.SendMessage("3 - 雪原", color);
+                                plr.SendMessage("4 - 丛林", color);
+                                plr.SendMessage("5 - 花岗岩", color);
+                                plr.SendMessage("6 - 大理石", color);
+                                plr.SendMessage("7 - 蘑菇", color);
+                                return;
+                        }
+
+                        var pos = new Point(plr.TileX, plr.TileY - 3);
+                        var rooms = HouseUtils.CreateRooms(pos);
+                        HouseBuilder builder = HouseTypeToBuilder(type, rooms);
+
+                        //自然箱子的生成概率为100%
+                        builder.ChestChance = 1;
+                        await AsyncHouse(plr, builder);
+                    }
+                    break;
+
                 case "cz":
                 case "重置":
                 case "rs":
@@ -1037,7 +1087,7 @@ internal static class Commands
             "/spi s [1/2] —— 修改指定选择区域(画矩形)",
             "/spi L —— 列出所有复制建筑",
             "/spi r 数量 —— 建小房子",
-            "/spi hs —— 脚下生成监狱",
+            "/spi jy —— 脚下生成监狱",
             "/spi ck —— 脚下生成仓库",
             "/spi dl —— 生成地牢",
             "/spi sm —— 生成神庙",
@@ -1048,6 +1098,7 @@ internal static class Commands
             "/spi wp 清理高度 —— 以手上方块生成世界平台",
             "/spi fp 宽 高 间隔 —— 以手上方块生成战斗平台",
             "/spi bx —— 生成宝物箱",
+            "/spi hs —— 生成野外房子",
             "/spi xj —— 生成陷阱",
             "/spi gz —— 生成罐子",
             "/spi sj —— 生成生命水晶",
@@ -1061,7 +1112,7 @@ internal static class Commands
         // 如果没有管理员权限，则移除一些命令
         if (!plr.HasPermission("spawninfra.admin"))
         {
-            commands.RemoveAll(cmd => cmd.Contains("hs") || cmd.Contains("ck") || cmd.Contains("dl") || cmd.Contains("sm") || cmd.Contains("wg") || cmd.Contains("bx") || cmd.Contains("xj") || cmd.Contains("gz") || cmd.Contains("sj") || cmd.Contains("jt") || cmd.Contains("jz") || cmd.Contains("jzt") || cmd.Contains("rs") || cmd.Contains("fh"));
+            commands.RemoveAll(cmd => cmd.Contains("hs") || cmd.Contains("ck") || cmd.Contains("dl") || cmd.Contains("sm") || cmd.Contains("wg") || cmd.Contains("bx") || cmd.Contains("xj") || cmd.Contains("gz") || cmd.Contains("sj") || cmd.Contains("jt") || cmd.Contains("jz") || cmd.Contains("jzt") || cmd.Contains("rs") || cmd.Contains("fh") || cmd.Contains("jy"));
         }
 
         // 计算总页数
@@ -1454,6 +1505,25 @@ internal static class Commands
             TileHelper.GenAfter();
             int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已生成腐化地，用时{value}秒。");
+        });
+    }
+    #endregion
+
+    #region 野生洞穴房子
+    public static Task AsyncHouse(TSPlayer plr, HouseBuilder builder)
+    {
+        TileHelper.StartGen();
+        int secondLast = GetUnixTimestamp;
+        return Task.Run(delegate
+        {
+            builder.Place(new HouseBuilderContext(), new StructureMap());
+            TileHelper.UpdateWorld(); //更新世界图格
+
+        }).ContinueWith(delegate
+        {
+            TileHelper.GenAfter();
+            int value = GetUnixTimestamp - secondLast;
+            plr.SendSuccessMessage($"已生成野外小屋，用时{value}秒。");
         });
     }
     #endregion

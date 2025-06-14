@@ -5,6 +5,7 @@ using static SpawnInfra.Plugin;
 using Microsoft.Xna.Framework;
 using Terraria.DataStructures;
 using Terraria.GameContent.Tile_Entities;
+using Terraria.GameContent.Biomes.CaveHouse;
 
 namespace SpawnInfra;
 
@@ -1124,6 +1125,23 @@ internal static class Utils
                 }
             }
         }
+    }
+    #endregion
+
+    #region 获取野生房屋类型
+    public static HouseBuilder HouseTypeToBuilder(HouseType type, List<Rectangle> rooms)
+    {
+        return type switch
+        {
+            HouseType.Wood => new WoodHouseBuilder(rooms),
+            HouseType.Desert => new DesertHouseBuilder(rooms),
+            HouseType.Granite => new GraniteHouseBuilder(rooms),
+            HouseType.Ice => new IceHouseBuilder(rooms),
+            HouseType.Jungle => new JungleHouseBuilder(rooms),
+            HouseType.Marble => new MarbleHouseBuilder(rooms),
+            HouseType.Mushroom => new MushroomHouseBuilder(rooms),
+            _ => HouseBuilder.Invalid,
+        };
     }
     #endregion
 }

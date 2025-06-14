@@ -13,6 +13,13 @@
 
 ## 更新日志
 ```
+v1.7.2
+将监狱集群的生成指令改为:/spi jy
+加入野生洞穴房生成指令:/spi hs
+当人物处于地表时，箱子物品为地表物品反之则为洞穴物品（沙漠箱洞穴物品独立）
+房子类型：木屋(1)、沙漠(2)、雪原(3)、丛林(4)、花岗岩(5)、大理石(6)、蘑菇(7)
+该指令需要权限：spawninfra.admin
+
 v1.7.1
 修复复制一次建筑，导致该晶塔即使挖掉也无法放置的BUG
 还原建筑时不再残留实体在图格上，移除修复晶塔配置项
@@ -242,7 +249,7 @@ v1.0.0
 | /spi pt 名字 | /基建 粘贴 |  spawninfra.use    |    在头顶粘贴指定建筑    |
 | /spi pt 名字 -f | /基建 粘贴 |  spawninfra.admin    |    粘贴还原箱子物品的指定建筑    |
 | /spi r 数量 | /基建 房子 |  spawninfra.use    |    在当前位置建小房子    |
-| /spi hs | /基建 监狱 |  spawninfra.admin    |    脚下生成监狱    |
+| /spi jy | /基建 监狱 |  spawninfra.admin    |    脚下生成监狱    |
 | /spi ck | /基建 仓库 |  spawninfra.admin    |    脚下生成仓库    |
 | /spi dl | /基建 地牢 |  spawninfra.admin    |    生成地牢(天顶需去地表使用)    |
 | /spi sm | /基建 神庙 |  spawninfra.admin    |    生成神庙    |
@@ -255,6 +262,7 @@ v1.0.0
 | /spi jz | /基建 剑冢 |  spawninfra.admin    |    生成附魔剑冢    |
 | /spi jzt | /基建 金字塔 |  spawninfra.admin    |    生成金字塔    |
 | /spi fh | /基建 腐化地 |  spawninfra.admin    |    生成腐化地    |
+| /spi hs | /基建 洞穴屋 |  spawninfra.admin    |    生成洞穴小屋    |
 | /spi sg 高度 宽度 | /基建 刷怪场 |  spawninfra.use    |    生成刷怪场    |
 | /spi yc 水 | /基建 鱼池 |  spawninfra.use    |    生成鱼池(水/蜂蜜/岩浆/微光)    |
 | /spi zt | /基建 直通车 |  spawninfra.use    |    生成直通车(天顶为头上)    |
