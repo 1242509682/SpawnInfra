@@ -4,7 +4,7 @@ using Terraria.ID;
 using static SpawnInfra.Plugin;
 using Microsoft.Xna.Framework;
 using Terraria.DataStructures;
-using static Terraria.GameContent.Tile_Entities.TELogicSensor;
+using Terraria.GameContent.Tile_Entities;
 
 namespace SpawnInfra;
 
@@ -18,7 +18,7 @@ internal static class Utils
             plr.SendErrorMessage("请进入游戏后再操作！");
         }
         return !plr.RealPlayer;
-    } 
+    }
     #endregion
 
     #region 清理一切方法
@@ -26,7 +26,7 @@ internal static class Utils
     {
         Main.tile[x, y].ClearEverything();
         NetMessage.SendTileSquare(-1, x, y, TileChangeType.None);
-    } 
+    }
     #endregion
 
     #region 缓存原始图格
@@ -60,6 +60,9 @@ internal static class Utils
 
         if (building.Tiles == null) return;
 
+        // 0. 还原前先销毁当前区域的互动家具实体
+        KillAll(startX, endX, startY, endY);
+
         // 1. 先还原图格数据
         for (int x = 0; x < building.Width; x++)
         {
@@ -88,7 +91,13 @@ internal static class Utils
         // 4. 恢复标牌信息
         RestoreSignText(building, 0, 0);
 
-        plr.SendSuccessMessage($"已还原区域 ({building.Width}x{building.Height})");
+        // 5. 物品框、盘子、武器架、人偶、衣帽架、逻辑感应器
+        RestoreItemFrames(building.ItemFrames, new Point(0, 0));
+        RestorefoodPlatter(building.FoodPlatters, new Point(0, 0));
+        RestoreWeaponsRack(building.WeaponsRacks, new Point(0, 0));
+        RestoreDisplayDoll(building.DisplayDolls, new Point(0, 0));
+        RestoreHatRack(building.HatRacks, new Point(0, 0));
+        RestoreLogicSensor(building.LogicSensors, new Point(0, 0));
     }
     #endregion
 
@@ -105,9 +114,14 @@ internal static class Utils
 
         Terraria.Tile[,] tiles = new Terraria.Tile[width, height];
 
-        // 定义箱子物品及其位置
-        var chestItems = new List<ChestItemData>();
+        var chestItems = new List<ChestItems>(); // 用于存储箱子数据
         var signs = new List<Sign>(); // 用于存储标牌数据
+        var itemFrames = new List<ItemFrames>(); // 用于存储物品框数据
+        var weaponsRack = new List<WRacks>(); //武器架物品
+        var foodPlatter = new List<FPlatters>(); //盘子物品
+        var displayDolls = new List<DDolls>(); //人偶物品
+        var hatRacks = new List<HatRacks>();  //衣帽架物品
+        var logicSensor = new List<LogicSensors>(); //逻辑感应器
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
@@ -118,7 +132,12 @@ internal static class Utils
 
                 GetChestItems(chestItems, x, y); //获取箱子物品
                 GetSign(signs, x, y); //获取标牌、广播盒、墓碑上等可阅读家具的信息
-
+                GetItemFrames(itemFrames, x, y); //获取物品框的物品
+                GetWeaponsRack(weaponsRack, x, y);  //获取武器架的物品
+                GetfoodPlatter(foodPlatter, x, y);  //获取盘子的物品
+                GetDisplayDoll(displayDolls, x, y); //获取人偶的物品
+                GetHatRack(hatRacks, x, y); //获取衣帽架物品
+                GetLogicSensor(logicSensor, x, y); //获取逻辑感应器开关状态
             }
         }
 
@@ -130,12 +149,18 @@ internal static class Utils
             Origin = new Point(minX, minY),
             ChestItems = chestItems,
             Signs = signs,
+            ItemFrames = itemFrames,
+            WeaponsRacks = weaponsRack,
+            FoodPlatters = foodPlatter,
+            DisplayDolls = displayDolls,
+            HatRacks = hatRacks,
+            LogicSensors = logicSensor,
         };
     }
     #endregion
 
-    #region 获取箱子物品方法
-    public static void GetChestItems(List<ChestItemData> chestItems, int x, int y)
+    #region 获取 与 还原箱子物品方法
+    public static void GetChestItems(List<ChestItems> chestItems, int x, int y)
     {
         // 判断是否是箱子图格
         if (!TileID.Sets.BasicChest[Main.tile[x, y].type]) return;
@@ -157,19 +182,17 @@ internal static class Utils
             if (item?.active == true)
             {
                 // 克隆物品并记录其原来所在箱子的位置
-                chestItems.Add(new ChestItemData
+                chestItems.Add(new ChestItems
                 {
-                    Item = (Item)item.DeepCopy(), // 克隆物品
+                    Item = (Item)item.Clone(), // 克隆物品
                     Position = new Point(x, y), // 记录箱子位置
                     Slot = slot
                 });
             }
         }
     }
-    #endregion
 
-    #region 还原箱子物品方法
-    public static void RestoreChestItems(IEnumerable<ChestItemData> Chests, Point offset)
+    public static void RestoreChestItems(IEnumerable<ChestItems> Chests, Point offset)
     {
         if (Chests == null || !Chests.Any()) return;
 
@@ -194,7 +217,7 @@ internal static class Utils
                 if (data.Slot < 0 || data.Slot >= 40) continue;
 
                 // 克隆物品并设置到箱子槽位
-                chest.item[data.Slot] = (Item)data.Item.DeepCopy();
+                chest.item[data.Slot] = (Item)data.Item.Clone();
             }
             catch (Exception ex)
             {
@@ -204,30 +227,7 @@ internal static class Utils
     }
     #endregion
 
-    #region 深度复制物品数据
-    public static Item DeepCopy(this Item item)
-    {
-        if (item == null || item.IsAir) return new Item();
-
-        var copy = new Item();
-        copy.SetDefaults(item.type);
-        copy.netID = item.netID;
-        copy.stack = item.stack;
-        copy.prefix = item.prefix;
-        copy.damage = item.damage;
-        copy.useTime = item.useTime;
-        copy.useAnimation = item.useAnimation;
-        copy.knockBack = item.knockBack;
-        copy.useStyle = item.useStyle;
-        copy.value = item.value;
-        copy.rare = item.rare;
-        copy.expert = item.expert;
-        copy.color = item.color;
-        return copy;
-    }
-    #endregion
-
-    #region 获取标牌内容方法
+    #region 获取 与 还原标牌内容方法
     public static void GetSign(List<Sign> signs, int x, int y)
     {
         if (Main.tile[x, y]?.active() == true && Main.tileSign[Main.tile[x, y].type])
@@ -249,9 +249,7 @@ internal static class Utils
             }
         }
     }
-    #endregion
 
-    #region 创建标牌方法
     private static int CreateNewSign(int x, int y)
     {
         // 查找是否有重复的 Sign
@@ -280,9 +278,7 @@ internal static class Utils
 
         return -1; // 没有可用槽位
     }
-    #endregion
 
-    #region 还原标牌内容方法
     public static void RestoreSignText(ClipboardData clip, int baseX, int baseY)
     {
         if (clip.Signs != null)
@@ -309,107 +305,345 @@ internal static class Utils
     }
     #endregion
 
-    #region 修复粘贴后家具无法互动：箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
-    public static void FixAll(int startX, int endX, int startY, int endY)
+    #region 获取 与 还原物品框物品方法
+    public static void GetItemFrames(List<ItemFrames> itemFrames, int x, int y)
     {
-        for (int x = startX; x <= endX; x++)
+        var tile = Main.tile[x, y];
+        if (tile.type != TileID.ItemFrame) return;
+        if (tile.frameX % 36 != 0 || tile.frameY != 0) return;
+
+        var id = TEItemFrame.Find(x, y);
+        if (id != -1)
         {
-            for (int y = startY; y <= endY; y++)
+            var frame = (TEItemFrame)TileEntity.ByID[id];
+            itemFrames.Add(new ItemFrames()
             {
-                var tile = Main.tile[x, y];
-                if (tile == null || !tile.active()) continue;
+                Item = new NetItem(frame.item.netID, frame.item.stack, frame.item.prefix),
+                Position = new Point(x, y),
+            });
+        }
+    }
 
-                //如果查找图格里是箱子
-                if (TileID.Sets.BasicChest[tile.type] && Chest.FindChest(x, y) == -1)
-                {
-                    // 创建新的 Chest  
-                    int newChest = Chest.CreateChest(x, y);
-                    if (newChest == -1) continue;
-                }
+    public static void RestoreItemFrames(List<ItemFrames> itemFrames, Point offset)
+    {
+        if (itemFrames == null || !itemFrames.Any()) return;
 
-                // 同步箱子图格到主位置
-                if (tile.type == TileID.Containers || tile.type == TileID.Containers2)
-                {
-                    WorldGen.SquareTileFrame(x, y, true);
-                }
+        foreach (var data in itemFrames)
+        {
+            // 计算新的物品框位置
+            int newX = data.Position.X + offset.X;
+            int newY = data.Position.Y + offset.Y;
 
-                //物品框
-                if (tile.type == TileID.ItemFrame)
-                {
-                    var ItemFrame = Terraria.GameContent.Tile_Entities.TEItemFrame.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (ItemFrame == -1) continue;
-                }
+            // 获取图格信息
+            var tile = Main.tile[newX, newY];
+            if (tile == null || !tile.active() || tile.type != TileID.ItemFrame)
+                continue;
 
-                //武器架
-                if (tile.type == TileID.WeaponsRack || tile.type == TileID.WeaponsRack2)
-                {
-                    var WeaponsRack = Terraria.GameContent.Tile_Entities.TEWeaponsRack.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (WeaponsRack == -1) continue;
-                }
-
-                //标牌 墓碑  广播盒
-                if ((tile.type == TileID.Signs ||
-                    tile.type == TileID.Tombstones ||
-                    tile.type == TileID.AnnouncementBox) &&
-                    tile.frameX % 36 == 0 && tile.frameY == 0 &&
-                    Sign.ReadSign(x, y, false) == -1)
-                {
-                    var sign = Sign.ReadSign(x, y, true);
-                    if (sign == -1) continue;
-                }
-
-                //逻辑感应器
-                if (tile.type == TileID.LogicSensor &&
-                    Terraria.GameContent.Tile_Entities.TELogicSensor.Find(x, y) == -1)
-                {
-                    int LogicSensor = Terraria.GameContent.Tile_Entities.TELogicSensor.Place(x, y);
-                    if (LogicSensor == -1) continue;
-
-                    ((Terraria.GameContent.Tile_Entities.TELogicSensor)TileEntity.ByID[LogicSensor]).logicCheck = (LogicCheckType)(tile.frameY / 18 + 1);
-                }
-
-                //人体模型
-                if (tile.type == TileID.DisplayDoll)
-                {
-                    var DisplayDoll = Terraria.GameContent.Tile_Entities.TEDisplayDoll.Place(x, y);
-                    if (DisplayDoll == -1) continue;
-                }
-
-                //盘子
-                if (tile.type == TileID.FoodPlatter)
-                {
-                    var FoodPlatter = Terraria.GameContent.Tile_Entities.TEFoodPlatter.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (FoodPlatter == -1) continue;
-                }
-
-                // 是否修复晶塔
-                if (Config.FixCopyPylon)
-                {
-                    if (tile.type == TileID.TeleportationPylon)
-                    {
-                        var TeleportationPylon = Terraria.GameContent.Tile_Entities.TETeleportationPylon.Place(x, y);
-                        if (TeleportationPylon == -1) continue;
-                    }
-                }
-
-                //训练假人（稻草人）
-                if (tile.type == TileID.TargetDummy)
-                {
-                    var TrainingDummy = Terraria.GameContent.Tile_Entities.TETrainingDummy.Place(x, y);
-                    if (TrainingDummy == -1) continue;
-                }
-
-                //衣帽架
-                if (tile.type == TileID.HatRack)
-                {
-                    var HatRack = Terraria.GameContent.Tile_Entities.TEHatRack.Place(x, y);
-                    WorldGen.SquareTileFrame(x, y, true);
-                    if (HatRack == -1) continue;
-                }
+            // 查找或创建 TEItemFrame（TileEntity）
+            int id = TEItemFrame.Find(newX, newY);
+            if (id == -1)
+            {
+                id = TEItemFrame.Place(newX, newY);
+                if (id == -1)
+                    continue; // 创建失败
             }
+
+            // 获取物品框实体
+            var frame = (TEItemFrame)TileEntity.ByID[id];
+
+            // 创建一个实际的物品对象并复制数据
+            Item item = new Item();
+            item.netDefaults(data.Item.NetId); // 设置物品 ID
+            item.stack = data.Item.Stack;       // 设置数量
+            item.prefix = data.Item.PrefixId;     // 设置前缀
+
+            // 更新物品框内的物品
+            frame.item = item;
+        }
+    }
+    #endregion
+
+    #region 获取 与 还原武器架物品方法
+    public static void GetWeaponsRack(List<WRacks> WRack, int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        if (tile.frameX % 54 != 0 || tile.frameY != 0) return;
+        if (tile.type == TileID.WeaponsRack2)
+        {
+            var id = TEWeaponsRack.Find(x, y);
+            if (id != -1)
+            {
+                var rack = (TEWeaponsRack)TileEntity.ByID[id];
+                WRack.Add(new WRacks()
+                {
+                    Item = new NetItem(rack.item.netID, rack.item.stack, rack.item.prefix),
+                    Position = new Point(x, y),
+                });
+            }
+        }
+    }
+
+    public static void RestoreWeaponsRack(List<WRacks> WRack, Point offset)
+    {
+        if (WRack == null || !WRack.Any()) return;
+
+        foreach (var data in WRack)
+        {
+            int newX = data.Position.X + offset.X;
+            int newY = data.Position.Y + offset.Y;
+
+            var tile = Main.tile[newX, newY];
+            if (tile == null || !tile.active() || tile.type != TileID.WeaponsRack2) continue;
+
+            int id = TEWeaponsRack.Find(newX, newY);
+            if (id == -1)
+            {
+                id = TEWeaponsRack.Place(newX, newY);
+                if (id == -1)
+                    continue; // 创建失败
+            }
+
+            var rack = (TEWeaponsRack)TileEntity.ByID[id];
+
+            // 创建一个实际的物品对象并复制数据
+            Item item = new Item();
+            item.netDefaults(data.Item.NetId); // 设置物品 ID
+            item.stack = data.Item.Stack;       // 设置数量
+            item.prefix = data.Item.PrefixId;     // 设置前缀
+
+            rack.item = item;
+        }
+    }
+    #endregion
+
+    #region 获取 与 还原盘子物品方法
+    public static void GetfoodPlatter(List<FPlatters> FPlatter, int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        if (tile.type == TileID.FoodPlatter)
+        {
+            var id = TEFoodPlatter.Find(x, y);
+            if (id != -1)
+            {
+                var platter = (TEFoodPlatter)TileEntity.ByID[id];
+                FPlatter.Add(new FPlatters()
+                {
+                    Item = new NetItem(platter.item.netID, platter.item.stack, platter.item.prefix),
+                    Position = new Point(x, y),
+                });
+            }
+        }
+    }
+
+    public static void RestorefoodPlatter(List<FPlatters> FPlatter, Point offset)
+    {
+        if (FPlatter == null || !FPlatter.Any()) return;
+
+        foreach (var data in FPlatter)
+        {
+            int newX = data.Position.X + offset.X;
+            int newY = data.Position.Y + offset.Y;
+
+            var tile = Main.tile[newX, newY];
+            if (tile == null || !tile.active() ||
+                tile.type != TileID.FoodPlatter) continue;
+
+            int id = TEFoodPlatter.Find(newX, newY);
+            if (id == -1)
+            {
+                id = TEFoodPlatter.Place(newX, newY);
+                if (id == -1)
+                    continue; // 创建失败
+            }
+
+            var food = (TEFoodPlatter)TileEntity.ByID[id];
+            // 创建一个实际的物品对象并复制数据
+            Item item = new Item();
+            item.netDefaults(data.Item.NetId); // 设置物品 ID
+            item.stack = data.Item.Stack;       // 设置数量
+            item.prefix = data.Item.PrefixId;     // 设置前缀
+
+            food.item = item;
+        }
+    }
+    #endregion
+
+    #region 获取 与 还原人偶物品方法
+    public static void GetDisplayDoll(List<DDolls> Dolls, int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        if (tile.type == TileID.DisplayDoll)
+        {
+            var id = TEDisplayDoll.Find(x, y);
+            if (id != -1)
+            {
+                var doll = (TEDisplayDoll)TileEntity.ByID[id];
+                Dolls.Add(new DDolls()
+                {
+                    Items = doll._items.Select(i => new NetItem(i.netID, i.stack, i.prefix)).ToArray(),
+                    Dyes = doll._dyes.Select(i => new NetItem(i.netID, i.stack, i.prefix)).ToArray(),
+                    Position = new Point(x, y),
+                });
+            }
+        }
+    }
+
+    public static void RestoreDisplayDoll(List<DDolls> Dolls, Point offset)
+    {
+        if (Dolls == null || !Dolls.Any()) return;
+
+        foreach (var data in Dolls)
+        {
+            int newX = data.Position.X + offset.X;
+            int newY = data.Position.Y + offset.Y;
+
+            var tile = Main.tile[newX, newY];
+            if (tile == null || !tile.active() ||
+                tile.type != TileID.DisplayDoll) continue;
+
+            int id = TEDisplayDoll.Find(newX, newY);
+            if (id == -1)
+            {
+                id = TEDisplayDoll.Place(newX, newY);
+                if (id == -1)
+                    continue; // 创建失败
+            }
+
+            var doll = (TEDisplayDoll)TileEntity.ByID[id];
+            doll._items = new Item[data.Items.Length];
+            for (int i = 0; i < data.Items.Length; i++)
+            {
+                var netItem = data.Items[i];
+                var item = new Item();
+                item.netDefaults(netItem.NetId);
+                item.stack = netItem.Stack;
+                item.prefix = netItem.PrefixId;
+                doll._items[i] = item;
+            }
+
+            doll._dyes = new Item[data.Dyes.Length];
+            for (int i = 0; i < data.Dyes.Length; i++)
+            {
+                var netItem = data.Dyes[i];
+                var item = new Item();
+                item.netDefaults(netItem.NetId);
+                item.stack = netItem.Stack;
+                item.prefix = netItem.PrefixId;
+                doll._dyes[i] = item;
+            }
+        }
+    }
+    #endregion
+
+    #region 获取 与 还原衣帽架物品方法
+    public static void GetHatRack(List<HatRacks> Racks, int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        if (tile.type == TileID.HatRack)
+        {
+            var id = TEHatRack.Find(x, y);
+            if (id != -1)
+            {
+                var doll = (TEHatRack)TileEntity.ByID[id];
+                Racks.Add(new HatRacks()
+                {
+                    Items = doll._items.Select(i => new NetItem(i.netID, i.stack, i.prefix)).ToArray(),
+                    Dyes = doll._dyes.Select(i => new NetItem(i.netID, i.stack, i.prefix)).ToArray(),
+                    Position = new Point(x, y),
+                });
+            }
+        }
+    }
+
+    public static void RestoreHatRack(List<HatRacks> Racks, Point offset)
+    {
+        if (Racks == null || !Racks.Any()) return;
+
+        foreach (var data in Racks)
+        {
+            int newX = data.Position.X + offset.X;
+            int newY = data.Position.Y + offset.Y;
+
+            var tile = Main.tile[newX, newY];
+            if (tile == null || !tile.active() ||
+                tile.type != TileID.HatRack) continue;
+
+            int id = TEHatRack.Find(newX, newY);
+            if (id == -1)
+            {
+                id = TEHatRack.Place(newX, newY);
+                if (id == -1)
+                    continue; // 创建失败
+            }
+
+            var Rack = (TEHatRack)TileEntity.ByID[id];
+            Rack._items = new Item[data.Items.Length];
+            for (int i = 0; i < data.Items.Length; i++)
+            {
+                var netItem = data.Items[i];
+                var item = new Item();
+                item.netDefaults(netItem.NetId);
+                item.stack = netItem.Stack;
+                item.prefix = netItem.PrefixId;
+                Rack._items[i] = item;
+            }
+
+            Rack._dyes = new Item[data.Dyes.Length];
+            for (int i = 0; i < data.Dyes.Length; i++)
+            {
+                var netItem = data.Dyes[i];
+                var item = new Item();
+                item.netDefaults(netItem.NetId);
+                item.stack = netItem.Stack;
+                item.prefix = netItem.PrefixId;
+                Rack._dyes[i] = item;
+            }
+        }
+    }
+    #endregion
+
+    #region 获取 与 还原逻辑感应器方法
+    public static void GetLogicSensor(List<LogicSensors> sensors, int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        if (tile.type == TileID.LogicSensor)
+        {
+            var id = TEFoodPlatter.Find(x, y);
+            if (id != -1)
+            {
+                var sensor = (TELogicSensor)TileEntity.ByID[id];
+                sensors.Add(new LogicSensors()
+                {
+                    type = sensor.logicCheck,
+                    Position = new Point(x, y),
+                });
+            }
+        }
+    }
+
+    public static void RestoreLogicSensor(List<LogicSensors> Sensors, Point offset)
+    {
+        if (Sensors == null || !Sensors.Any()) return;
+
+        foreach (var data in Sensors)
+        {
+            int newX = data.Position.X + offset.X;
+            int newY = data.Position.Y + offset.Y;
+
+            var tile = Main.tile[newX, newY];
+            if (tile == null || !tile.active() ||
+                tile.type != TileID.LogicSensor) continue;
+
+            int id = TELogicSensor.Find(newX, newY);
+            if (id == -1)
+            {
+                id = TELogicSensor.Place(newX, newY);
+                if (id == -1)
+                    continue; // 创建失败
+            }
+
+            var Sensor = (TELogicSensor)TileEntity.ByID[id];
+            Sensor.logicCheck = data.type;
         }
     }
     #endregion
@@ -440,7 +674,7 @@ internal static class Utils
         }
 
         plr.SendInfoMessage($"【[c/79E365:成功]】将 {name} 替换 [i/s{vein.Count}:{GetItemFromTile(x, y).netID}]");
-    } 
+    }
     #endregion
 
     #region 连锁区域的8个方向（上下左右+斜4向）
@@ -718,6 +952,178 @@ internal static class Utils
         WorldGen.PlaceWire(CenterRight + 1, middle);
         WorldGen.PlaceTile(CenterLeft - 1, middle + 1, 144, false, true, -1, 4);
         WorldGen.PlaceTile(CenterRight + 1, middle + 1, 144, false, true, -1, 4);
+    }
+    #endregion
+
+    #region 修复粘贴后家具无法互动：箱子、物品框、武器架、标牌、墓碑、广播盒、逻辑感应器、人偶模特、盘子、晶塔、稻草人、衣帽架
+    public static void FixAll(int startX, int endX, int startY, int endY)
+    {
+        for (int x = startX; x <= endX; x++)
+        {
+            for (int y = startY; y <= endY; y++)
+            {
+                var tile = Main.tile[x, y];
+                if (tile == null || !tile.active()) continue;
+
+                //如果查找图格里是箱子
+                if (TileID.Sets.BasicChest[tile.type] && Chest.FindChest(x, y) == -1)
+                {
+                    // 创建新的 Chest  
+                    int newChest = Chest.CreateChest(x, y);
+                    WorldGen.SquareTileFrame(x, y, true);
+                    if (newChest == -1) continue;
+                }
+
+                //物品框
+                if (tile.type == TileID.ItemFrame && tile.frameX % 36 == 0 && tile.frameY == 0)
+                {
+                    var ItemFrame = TEItemFrame.Place(x, y);
+                    WorldGen.SquareTileFrame(x, y, true);
+                    if (ItemFrame == -1) continue;
+                }
+
+                //武器架
+                if ((tile.type == TileID.WeaponsRack || tile.type == TileID.WeaponsRack2) && tile.frameX % 54 == 0 && tile.frameY == 0)
+                {
+                    var WeaponsRack = TEWeaponsRack.Place(x, y);
+                    WorldGen.SquareTileFrame(x, y, true);
+                    if (WeaponsRack == -1) continue;
+                }
+
+                //标牌 墓碑  广播盒
+                if ((tile.type == TileID.Signs ||
+                    tile.type == TileID.Tombstones ||
+                    tile.type == TileID.AnnouncementBox) &&
+                    tile.frameX % 36 == 0 && tile.frameY == 0 &&
+                    Sign.ReadSign(x, y, false) == -1)
+                {
+                    var sign = Sign.ReadSign(x, y, true);
+                    if (sign == -1) continue;
+                }
+
+                //逻辑感应器
+                if (tile.type == TileID.LogicSensor && TELogicSensor.Find(x, y) == -1)
+                {
+                    int LogicSensor = TELogicSensor.Place(x, y);
+                    if (LogicSensor == -1) continue;
+
+                    ((TELogicSensor)TileEntity.ByID[LogicSensor]).logicCheck = (TELogicSensor.LogicCheckType)(tile.frameY / 18 + 1);
+                }
+
+                //人体模型
+                if (tile.type == TileID.DisplayDoll && tile.frameX % 36 == 0 && tile.frameY == 0)
+                {
+                    var DisplayDoll = TEDisplayDoll.Place(x, y);
+                    if (DisplayDoll == -1) continue;
+                }
+
+                //盘子
+                if (tile.type == TileID.FoodPlatter)
+                {
+                    var FoodPlatter = TEFoodPlatter.Place(x, y);
+                    WorldGen.SquareTileFrame(x, y, true);
+                    if (FoodPlatter == -1) continue;
+                }
+
+                // 晶塔
+                if (tile.type == TileID.TeleportationPylon && tile.frameX % 54 == 0 && tile.frameY == 0)
+                {
+                    var TeleportationPylon = TETeleportationPylon.Place(x, y);
+                    if (TeleportationPylon == -1) continue;
+                }
+
+                //训练假人（稻草人）
+                if (tile.type == TileID.TargetDummy && tile.frameX % 36 == 0 && tile.frameY == 0)
+                {
+                    var TrainingDummy = TETrainingDummy.Place(x, y);
+                    if (TrainingDummy == -1) continue;
+                }
+
+                //衣帽架
+                if (tile.type == TileID.HatRack && tile.frameX == 0 && tile.frameY == 0)
+                {
+                    var HatRack = TEHatRack.Place(x, y);
+                    WorldGen.SquareTileFrame(x, y, true);
+                    if (HatRack == -1) continue;
+                }
+            }
+        }
+    }
+    #endregion
+
+    #region 销毁所有互动家具实体
+    public static void KillAll(int startX, int endX, int startY, int endY)
+    {
+        for (int x = startX; x <= endX; x++)
+        {
+            for (int y = startY; y <= endY; y++)
+            {
+                var tile = Main.tile[x, y];
+                if (tile == null || !tile.active()) continue;
+
+                //如果查找图格里是箱子
+                if (TileID.Sets.BasicChest[tile.type] && Chest.FindChest(x, y) == -1)
+                {
+                    Chest.DestroyChest(x, y);
+                }
+
+                //物品框
+                if (tile.type == TileID.ItemFrame)
+                {
+                    TEItemFrame.Kill(x, y);
+                }
+
+                //武器架
+                if (tile.type == TileID.WeaponsRack || tile.type == TileID.WeaponsRack2)
+                {
+                    TEWeaponsRack.Kill(x, y);
+                }
+
+                //标牌 墓碑  广播盒
+                if ((tile.type == TileID.Signs ||
+                    tile.type == TileID.Tombstones ||
+                    tile.type == TileID.AnnouncementBox))
+                {
+                    Sign.KillSign(x, y);
+                }
+
+                //逻辑感应器
+                if (tile.type == TileID.LogicSensor)
+                {
+                    TELogicSensor.Kill(x, y);
+                }
+
+                //人体模型
+                if (tile.type == TileID.DisplayDoll)
+                {
+                    TEDisplayDoll.Kill(x, y);
+                }
+
+                //盘子
+                if (tile.type == TileID.FoodPlatter)
+                {
+                    TEFoodPlatter.Kill(x, y);
+                }
+
+                //晶塔
+                if (tile.type == TileID.TeleportationPylon)
+                {
+                    TETeleportationPylon.Kill(x, y);
+                }
+
+                //训练假人（稻草人）
+                if (tile.type == TileID.TargetDummy)
+                {
+                    TETrainingDummy.Kill(x, y);
+                }
+
+                //衣帽架
+                if (tile.type == TileID.HatRack)
+                {
+                    TEHatRack.Kill(x, y);
+                }
+            }
+        }
     }
     #endregion
 }

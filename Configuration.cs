@@ -38,10 +38,7 @@ internal class Configuration
     [JsonProperty("复制建筑修复家具物品", Order = -7)]
     public bool FixCopyItem { get; set; } = true;
 
-    [JsonProperty("复制建筑修复晶塔", Order = -6)]
-    public bool FixCopyPylon { get; set; } = false;
-
-    [JsonProperty("连锁替换图格上限", Order = -5)]
+    [JsonProperty("连锁替换图格上限", Order = -6)]
     public int ReplaceCount { get; set; } = 500;
 
     [JsonProperty("开服指令表", Order = -2)]

@@ -180,7 +180,7 @@ internal static class Commands
                         if (NeedInGame() || NeedWaitTask()) return;
 
                         string name = plr.Name; // 默认使用玩家自己的名字
-                        bool fixChest = false;
+                        bool fixItem = false;
 
                         // 解析参数
                         for (int i = 1; i < args.Parameters.Count; i++)
@@ -190,14 +190,14 @@ internal static class Commands
                             {
                                 if (plr.HasPermission("spawninfra.admin"))
                                 {
-                                    plr.SendInfoMessage("已为你修复箱子物品");
-                                    fixChest = true;
+                                    plr.SendInfoMessage("已为你修复家具物品");
+                                    fixItem = true;
                                 }
                                 else
                                 {
-                                    plr.SendErrorMessage("你无权使用`-f`参数修复箱子物品");
+                                    plr.SendErrorMessage("你无权使用`-f`参数修复家具物品");
                                     plr.SendInfoMessage("这需要权限: [c/AEEBE9:spawninfra.admin]");
-                                    fixChest = false;
+                                    fixItem = false;
                                 }
                             }
                             else if (!string.IsNullOrWhiteSpace(param))
@@ -219,7 +219,7 @@ internal static class Commands
                         int startX = plr.TileX - clip.Width / 2;
                         int startY = plr.TileY - clip.Height;
 
-                        await SpawnBuilding(plr, startX, startY, clip, fixChest);
+                        await SpawnBuilding(plr, startX, startY, clip, fixItem);
                     }
                     break;
 
@@ -992,7 +992,7 @@ internal static class Commands
 
         bool NeedInGame() => Utils.NeedInGame(plr);
         bool NeedWaitTask() => TileHelper.NeedWaitTask(plr);
-    } 
+    }
     #endregion
 
     #region 帮助菜单
@@ -1800,7 +1800,7 @@ internal static class Commands
     #endregion
 
     #region 生成建筑方法
-    public static Task SpawnBuilding(TSPlayer plr, int startX, int startY, ClipboardData clip, bool fixChest)
+    public static Task SpawnBuilding(TSPlayer plr, int startX, int startY, ClipboardData clip, bool fixItem)
     {
         TileHelper.StartGen();
         //缓存 方便粘贴错了还原
@@ -1812,6 +1812,9 @@ internal static class Commands
 
         return Task.Run(() =>
         {
+            // 先销毁目标区域的互动家具实体
+            KillAll(startX, startX + clip.Width - 1, startY, startY + clip.Height - 1);
+
             for (int x = 0; x < clip.Width; x++)
             {
                 for (int y = 0; y < clip.Height; y++)
@@ -1828,18 +1831,29 @@ internal static class Commands
                 }
             }
 
+        }).ContinueWith(_ =>
+        {
             // 修复家具实体
             FixAll(startX, startX + clip.Width - 1, startY, startY + clip.Height - 1);
 
-            //启动配置项和使用-f都可以还原箱子物品
-            if (Config.FixCopyItem || fixChest)
-                RestoreChestItems(clip.ChestItems!, new Point(baseX, baseY));
-
-            //修复标牌信息
+            // 修复标牌信息
             RestoreSignText(clip, baseX, baseY);
 
-        }).ContinueWith(_ =>
-        {
+            // 修复逻辑感应器
+            RestoreLogicSensor(clip.LogicSensors, new Point(baseX, baseY));
+
+            // 启动配置项和使用-f都可以还原家具的物品
+            if (Config.FixCopyItem || fixItem)
+            {
+                //修复箱子、物品框、盘子、武器架、人偶、衣帽架的物品
+                RestoreChestItems(clip.ChestItems!, new Point(baseX, baseY));
+                RestoreItemFrames(clip.ItemFrames, new Point(baseX, baseY));
+                RestorefoodPlatter(clip.FoodPlatters, new Point(baseX, baseY));
+                RestoreWeaponsRack(clip.WeaponsRacks, new Point(baseX, baseY));
+                RestoreDisplayDoll(clip.DisplayDolls, new Point(baseX, baseY));
+                RestoreHatRack(clip.HatRacks, new Point(baseX, baseY));
+            }
+
             TileHelper.GenAfter();
             int value = GetUnixTimestamp - secondLast;
             plr.SendSuccessMessage($"已粘贴区域 ({clip.Width}x{clip.Height})，用时{value}秒。");

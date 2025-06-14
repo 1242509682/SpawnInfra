@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Terraria;
 using TShockAPI;
+using Terraria.GameContent.Tile_Entities;
 using static SpawnInfra.Plugin;
 
 namespace SpawnInfra;
@@ -101,6 +102,7 @@ public class Map
 
         if (clip.Tiles == null) return;
 
+        #region 写入图格
         for (int x = 0; x < clip.Width; x++)
         {
             for (int y = 0; y < clip.Height; y++)
@@ -117,8 +119,9 @@ public class Map
                 writer.Write(tile.wall);
             }
         }
+        #endregion
 
-        // 箱子物品
+        #region 写入箱子物品
         writer.Write(clip.ChestItems?.Count ?? 0);
         if (clip.ChestItems != null)
         {
@@ -133,8 +136,9 @@ public class Map
                 writer.Write(data.Item?.prefix ?? 0);
             }
         }
+        #endregion
 
-        // 标牌
+        #region 写入标牌信息
         writer.Write(clip.Signs?.Count ?? 0);
         if (clip.Signs != null)
         {
@@ -145,6 +149,128 @@ public class Map
                 writer.Write(sign.text ?? "");
             }
         }
+        #endregion
+
+        #region 写入物品框物品
+        writer.Write(clip.ItemFrames?.Count ?? 0);
+        if (clip.ItemFrames != null)
+        {
+            foreach (var data in clip.ItemFrames)
+            {
+                writer.Write(data.Position.X - clip.Origin.X); // 存储相对坐标
+                writer.Write(data.Position.Y - clip.Origin.Y);
+                writer.Write(data.Item.NetId);
+                writer.Write(data.Item.Stack);
+                writer.Write(data.Item.PrefixId);
+            }
+        }
+        #endregion
+
+        #region 写入武器架物品
+        writer.Write(clip.WeaponsRacks?.Count ?? 0);
+        if (clip.WeaponsRacks != null)
+        {
+            foreach (var data in clip.WeaponsRacks)
+            {
+                writer.Write(data.Position.X - clip.Origin.X);
+                writer.Write(data.Position.Y - clip.Origin.Y);
+                writer.Write(data.Item.NetId);
+                writer.Write(data.Item.Stack);
+                writer.Write(data.Item.PrefixId);
+            }
+        }
+        #endregion
+
+        #region 写入盘子物品
+        writer.Write(clip.FoodPlatters?.Count ?? 0);
+        if (clip.FoodPlatters != null)
+        {
+            foreach (var data in clip.FoodPlatters)
+            {
+                writer.Write(data.Position.X - clip.Origin.X);
+                writer.Write(data.Position.Y - clip.Origin.Y);
+                writer.Write(data.Item.NetId);
+                writer.Write(data.Item.Stack);
+                writer.Write(data.Item.PrefixId);
+            }
+        }
+        #endregion
+
+        #region 写入人偶物品
+        writer.Write(clip.DisplayDolls?.Count ?? 0);
+        if (clip.DisplayDolls != null)
+        {
+            foreach (var doll in clip.DisplayDolls)
+            {
+                // 保存相对坐标
+                writer.Write(doll.Position.X - clip.Origin.X);
+                writer.Write(doll.Position.Y - clip.Origin.Y);
+
+                // 保存物品数据 (8个槽位)
+                writer.Write(doll.Items.Length);
+                foreach (var item in doll.Items)
+                {
+                    writer.Write(item.NetId);
+                    writer.Write(item.Stack);
+                    writer.Write(item.PrefixId);
+                }
+
+                // 保存染料数据 (8个槽位)
+                writer.Write(doll.Dyes.Length);
+                foreach (var dye in doll.Dyes)
+                {
+                    writer.Write(dye.NetId);
+                    writer.Write(dye.Stack);
+                    writer.Write(dye.PrefixId);
+                }
+            }
+        }
+        #endregion
+
+        #region 写入衣帽架物品
+        writer.Write(clip.HatRacks?.Count ?? 0);
+        if (clip.HatRacks != null)
+        {
+            foreach (var Rack in clip.HatRacks)
+            {
+                // 保存相对坐标
+                writer.Write(Rack.Position.X - clip.Origin.X);
+                writer.Write(Rack.Position.Y - clip.Origin.Y);
+
+                // 保存物品数据 (2个槽位)
+                writer.Write(Rack.Items.Length);
+                foreach (var item in Rack.Items)
+                {
+                    writer.Write(item.NetId);
+                    writer.Write(item.Stack);
+                    writer.Write(item.PrefixId);
+                }
+
+                // 保存染料数据 (2个槽位)
+                writer.Write(Rack.Dyes.Length);
+                foreach (var dye in Rack.Dyes)
+                {
+                    writer.Write(dye.NetId);
+                    writer.Write(dye.Stack);
+                    writer.Write(dye.PrefixId);
+                }
+            }
+        }
+        #endregion
+
+        #region 写入逻辑感应器检查类型
+        writer.Write(clip.LogicSensors?.Count ?? 0);
+        if (clip.LogicSensors != null)
+        {
+            foreach (var data in clip.LogicSensors)
+            {
+                writer.Write(data.Position.X - clip.Origin.X);
+                writer.Write(data.Position.Y - clip.Origin.Y);
+                writer.Write((int)data.type);
+            }
+        }
+        #endregion
+
     }
     #endregion
 
@@ -156,6 +282,7 @@ public class Map
         int width = reader.ReadInt32();
         int height = reader.ReadInt32();
 
+        #region 读取图格物品数据
         var tiles = new Terraria.Tile[width, height];
         for (int x = 0; x < width; x++)
         {
@@ -176,10 +303,11 @@ public class Map
                 tiles[x, y] = tile;
             }
         }
+        #endregion
 
-        // 箱子物品
+        #region 读取箱子物品数据
         int chestItemCount = reader.ReadInt32();
-        var chestItems = new List<ChestItemData>(chestItemCount);
+        var chestItems = new List<ChestItems>(chestItemCount);
         for (int i = 0; i < chestItemCount; i++)
         {
             int posX = reader.ReadInt32();
@@ -196,15 +324,16 @@ public class Map
             item.stack = stack;
             item.prefix = prefix;
 
-            chestItems.Add(new ChestItemData
+            chestItems.Add(new ChestItems
             {
                 Position = new Point(posX, posY),
                 Slot = slot,
                 Item = item
             });
         }
+        #endregion
 
-        // 标牌
+        #region 读取标牌信息内容
         int signCount = reader.ReadInt32();
         var signs = new List<Sign>(signCount);
         for (int i = 0; i < signCount; i++)
@@ -220,6 +349,163 @@ public class Map
                 text = text
             });
         }
+        #endregion
+
+        #region 读取物品框物品数据
+        int itemFrameCount = reader.ReadInt32();
+        var itemFrames = new List<ItemFrames>(itemFrameCount);
+        for (int i = 0; i < itemFrameCount; i++)
+        {
+            int relX = reader.ReadInt32();
+            int relY = reader.ReadInt32();
+            int netId = reader.ReadInt32();
+            int stack = reader.ReadInt32();
+            byte prefix = reader.ReadByte();
+
+            itemFrames.Add(new ItemFrames
+            {
+                Position = new Point(originX + relX, originY + relY),
+                Item = new NetItem(netId, stack, prefix)
+            });
+        }
+        #endregion
+
+        #region 读取武器架物品数据
+        int weaponRackCount = reader.ReadInt32();
+        var weaponRacks = new List<WRacks>(weaponRackCount);
+        for (int i = 0; i < weaponRackCount; i++)
+        {
+            int relX = reader.ReadInt32();
+            int relY = reader.ReadInt32();
+            int netId = reader.ReadInt32();
+            int stack = reader.ReadInt32();
+            byte prefix = reader.ReadByte();
+
+            weaponRacks.Add(new WRacks
+            {
+                Position = new Point(originX + relX, originY + relY),
+                Item = new NetItem(netId, stack, prefix)
+            });
+        }
+        #endregion
+
+        #region 读取盘子物品数据
+        int foodPlatterCount = reader.ReadInt32();
+        var foodPlatters = new List<FPlatters>(foodPlatterCount);
+        for (int i = 0; i < foodPlatterCount; i++)
+        {
+            int relX = reader.ReadInt32();
+            int relY = reader.ReadInt32();
+            int netId = reader.ReadInt32();
+            int stack = reader.ReadInt32();
+            byte prefix = reader.ReadByte();
+
+            foodPlatters.Add(new FPlatters
+            {
+                Position = new Point(originX + relX, originY + relY),
+                Item = new NetItem(netId, stack, prefix)
+            });
+        }
+        #endregion
+
+        #region 读取人偶物品数据
+        int dollCount = reader.ReadInt32();
+        var displayDolls = new List<DDolls>(dollCount);
+        for (int i = 0; i < dollCount; i++)
+        {
+            int relX = reader.ReadInt32();
+            int relY = reader.ReadInt32();
+
+            // 读取物品
+            int itemCount = reader.ReadInt32();
+            var items = new NetItem[itemCount];
+            for (int j = 0; j < itemCount; j++)
+            {
+                items[j] = new NetItem(
+                    reader.ReadInt32(),
+                    reader.ReadInt32(),
+                    reader.ReadByte()
+                );
+            }
+
+            // 读取染料
+            int dyeCount = reader.ReadInt32();
+            var dyes = new NetItem[dyeCount];
+            for (int j = 0; j < dyeCount; j++)
+            {
+                dyes[j] = new NetItem(
+                    reader.ReadInt32(),
+                    reader.ReadInt32(),
+                    reader.ReadByte()
+                );
+            }
+
+            displayDolls.Add(new DDolls
+            {
+                Position = new Point(originX + relX, originY + relY),
+                Items = items,
+                Dyes = dyes
+            });
+        }
+        #endregion
+
+        #region 读取衣帽架物品数据
+        int RackCount = reader.ReadInt32();
+        var hatRacks = new List<HatRacks>(RackCount);
+        for (int i = 0; i < RackCount; i++)
+        {
+            int relX = reader.ReadInt32();
+            int relY = reader.ReadInt32();
+
+            // 读取物品
+            int itemCount = reader.ReadInt32();
+            var items = new NetItem[itemCount];
+            for (int j = 0; j < itemCount; j++)
+            {
+                items[j] = new NetItem(
+                    reader.ReadInt32(),
+                    reader.ReadInt32(),
+                    reader.ReadByte()
+                );
+            }
+
+            // 读取染料
+            int dyeCount = reader.ReadInt32();
+            var dyes = new NetItem[dyeCount];
+            for (int j = 0; j < dyeCount; j++)
+            {
+                dyes[j] = new NetItem(
+                    reader.ReadInt32(),
+                    reader.ReadInt32(),
+                    reader.ReadByte()
+                );
+            }
+
+            hatRacks.Add(new HatRacks
+            {
+                Position = new Point(originX + relX, originY + relY),
+                Items = items,
+                Dyes = dyes
+            });
+        }
+        #endregion
+
+        #region 读取逻辑灯开关数据
+        int LogicSensorsCount = reader.ReadInt32();
+        var logicSensors = new List<LogicSensors>(LogicSensorsCount);
+        for (int i = 0; i < LogicSensorsCount; i++)
+        {
+            int relX = reader.ReadInt32();
+            int relY = reader.ReadInt32();
+            int type = reader.ReadInt32();
+
+            logicSensors.Add(new LogicSensors
+            {
+                Position = new Point(originX + relX, originY + relY),
+                type = (TELogicSensor.LogicCheckType)reader.ReadInt32()
+            });
+        }
+        #endregion
 
         return new ClipboardData
         {
@@ -228,7 +514,13 @@ public class Map
             Height = height,
             Tiles = tiles,
             ChestItems = chestItems,
-            Signs = signs
+            Signs = signs,
+            ItemFrames = itemFrames,
+            WeaponsRacks = weaponRacks,
+            FoodPlatters = foodPlatters,
+            DisplayDolls = displayDolls,
+            HatRacks = hatRacks,
+            LogicSensors = logicSensors
         };
     }
     #endregion
